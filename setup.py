@@ -5,10 +5,9 @@ __version__ = "0.1"
 
 install_requires = [
     'requests',
-    'notebook',
     'pynacl',
     'requests_oauthlib',
-
+    'python-networkmanager',
 ]
 
 scripts = [

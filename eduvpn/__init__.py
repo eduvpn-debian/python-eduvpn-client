@@ -157,7 +157,7 @@ def get_auth_url(oauth, code_verifier, auth_endpoint):
 
 
 def get_oauth_token_code(auth_url, port):
-    logger.info("Opening default webbrowser with authorization URL and waiting for callback on port {}".format(port))
+    logger.info("Opening default webbrowser with {} and waiting for callback on port {}".format(auth_url, port))
     webbrowser.open(auth_url)
     response = one_request(port)
     code = response['code'][0]
@@ -302,8 +302,3 @@ def main():
     nm_config['vpn']['data'].update({'cert': cert_path, 'key': key_path, 'ca': ca_path, 'ta': ta_path})
 
     add_nm_config(nm_config)
-
-
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
-    main()
