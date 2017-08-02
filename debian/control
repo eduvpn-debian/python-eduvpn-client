@@ -3,20 +3,24 @@ Section: python
 Priority: optional
 Maintainer: Gijs Molenaar (launchpad ppa build key) <gijs@pythonic.nl>
 Build-Depends: debhelper (>= 9),
-	dh-python,
-	python-all,
-	python-setuptools,
-	python-networkmanager,
-	network-manager-openvpn-gnome,
-	python-dbus,
-	python-nacl,
-	python-requests-oauthlib,
-#	python3-all,
-#	python3-setuptools,
-#	python3-networkmanager,
-#	python3-dbus,
-#	python3-nacl,
-#	python3-requests-oauthlib
+    dh-python,
+    python-all,
+    python-setuptools,
+    python-networkmanager,
+    network-manager-openvpn-gnome,
+    python-dbus,
+    python-nacl,
+    python-requests-oauthlib,
+    python-gi,
+    python-sphinx-rtd-theme,
+    python-sphinx
+#    python3-all,
+#    python3-setuptools,
+#    python3-networkmanager,
+#    python3-dbus,
+#    python3-nacl,
+#    python3-requests-oauthlib,
+#    python3-gi
 Standards-Version: 3.9.8
 Homepage: https://github.com/gijzelaerr/python-eduvpn-client
 X-Python-Version: >= 2.6
@@ -27,7 +31,7 @@ Testsuite: autopkgtest-pkg-python
 
 Package: python-eduvpn-client
 Architecture: all
-Depends: ${python:Depends}, ${misc:Depends}
+Depends: ${python:Depends}, ${misc:Depends}, python-gi, python-networkmanager, python-dbus
 Suggests: python-eduvpn-client-doc
 Description: EduVPN client (Python 2)
  This package installs the library for Python 2.

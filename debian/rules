@@ -5,6 +5,10 @@
 
 export PYBUILD_NAME=eduvpn-client
 
+override_dh_auto_build:
+	dh_auto_build
+	make doc
+
 %:
 	dh $@ --with python2 --buildsystem=pybuild
 
