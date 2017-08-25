@@ -1,3 +1,10 @@
+python-eduvpn-client (0.5.1-1) stable; urgency=medium
+
+  * cleanup before build
+  * New upstream version 0.5.1
+
+ -- Gijs Molenaar (launchpad ppa build key) <gijs@pythonic.nl>  Fri, 25 Aug 2017 16:00:57 +0200
+
 python-eduvpn-client (0.5-1) stable; urgency=medium
 
   * New upstream version 0.5
