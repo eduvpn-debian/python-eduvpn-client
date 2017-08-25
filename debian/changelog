@@ -1,3 +1,10 @@
+python-eduvpn-client (0.3-2) stable; urgency=medium
+
+  * add missing dependencies
+  * fix eduVPN casing
+
+ -- Gijs Molenaar (launchpad ppa build key) <gijs@pythonic.nl>  Fri, 25 Aug 2017 12:47:12 +0200
+
 python-eduvpn-client (0.3-1) stable; urgency=medium
 
   * New upstream version 0.3

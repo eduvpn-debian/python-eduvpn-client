@@ -11,7 +11,7 @@ override_dh_auto_clean:
 
 override_dh_auto_build:
 	dh_auto_build
-	make doc
+	python -msphinx doc doc/_build
 
 %:
 	dh $@ --with python2 --buildsystem=pybuild

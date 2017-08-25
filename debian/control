@@ -33,25 +33,26 @@ Package: python-eduvpn-client
 Architecture: all
 Depends: ${python:Depends}, ${misc:Depends}, python-gi, python-networkmanager, python-dbus
 Suggests: python-eduvpn-client-doc
-Description: EduVPN client (Python 2)
+Description: eduVPN client (Python 2)
  This package installs the library for Python 2.
 
 #Package: python3-eduvpn-client
 #Architecture: all
 #Depends: ${python3:Depends}, ${misc:Depends}
 #Suggests: python-eduvpn-client-doc
-#Description: EduVPN client (Python 3)
+#Description: eduVPN client (Python 3)
 # This package installs the library for Python 3.
 
 Package: python-eduvpn-client-doc
 Architecture: all
 Section: doc
 Depends: ${sphinxdoc:Depends}, ${misc:Depends}
-Description: EduVPN client (common documentation)
+Description: eduVPN client (common documentation)
  This is the common documentation package.
 
 Package: eduvpn-client
 Architecture: all
-Depends: python-eduvpn-client
-Description: The Linux EduVPN client
+Depends: python-eduvpn-client, network-manager-openvpn, network-manager-openvpn-gnome, openvpn
+Description: The eduVPN client
+
 
