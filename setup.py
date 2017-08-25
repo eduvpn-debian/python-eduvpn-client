@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-__version__ = "0.3"
+__version__ = "0.4"
 
 
 install_requires = [
@@ -38,7 +38,7 @@ setup(
     extras_require=extras_require,
     author="Gijs Molenaar",
     author_email="gijs@pythonic.nl",
-    description="EduVPN client",
+    description="eduVPN client",
     license="GPL3",
     keywords="vpn openvpn networking security",
     url="https://github.com/gijzelaerr/eduvpn-linux-client",
