@@ -4,13 +4,16 @@
   <requires lib="gtk+" version="3.20"/>
   <object class="GtkListStore" id="configs-model">
     <columns>
-      <!-- column-name name -->
+      <!-- column-name uuid -->
+      <column type="gchararray"/>
+      <!-- column-name display_name -->
       <column type="gchararray"/>
     </columns>
   </object>
   <object class="GtkApplicationWindow" id="eduvpn-window">
     <property name="can_focus">False</property>
     <property name="title" translatable="yes">eduVPN configuration manager</property>
+    <property name="icon">../icons/hicolor/128x128/apps/eduvpn-client.png</property>
     <signal name="delete-event" handler="delete_window" swapped="no"/>
     <child>
       <object class="GtkBox" id="eduvpn-top-widget">
@@ -60,7 +63,7 @@
                             <child>
                               <object class="GtkCellRendererText" id="provider-column-text-text"/>
                               <attributes>
-                                <attribute name="text">0</attribute>
+                                <attribute name="text">1</attribute>
                               </attributes>
                             </child>
                           </object>
@@ -186,7 +189,7 @@
                       <object class="GtkImage">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="pixbuf">../icons/hicolor/256x256/apps/eduvpn-client.png</property>
+			<property name="pixbuf">../icons/hicolor/256x256/apps/eduvpn-client.png</property>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -257,6 +260,135 @@
       </object>
     </child>
   </object>
+  <object class="GtkDialog" id="connection-type-dialog">
+    <property name="can_focus">False</property>
+    <property name="modal">True</property>
+    <property name="type_hint">dialog</property>
+    <property name="decorated">False</property>
+    <property name="transient_for">eduvpn-window</property>
+    <child internal-child="vbox">
+      <object class="GtkBox">
+        <property name="can_focus">False</property>
+        <property name="margin_left">20</property>
+        <property name="margin_right">20</property>
+        <property name="margin_top">20</property>
+        <property name="margin_bottom">20</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">36</property>
+        <child internal-child="action_area">
+          <object class="GtkButtonBox">
+            <property name="can_focus">False</property>
+            <property name="layout_style">end</property>
+            <child>
+              <object class="GtkButton" id="button3">
+                <property name="label" translatable="yes">cancel</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="button4">
+                <property name="label" translatable="yes">Secure internet</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="button5">
+                <property name="label" translatable="yes">Institute access</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">2</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="button6">
+                <property name="label" translatable="yes">Custom instance</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">3</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">2</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">choose your profile</property>
+            <attributes>
+              <attribute name="weight" value="ultraheavy"/>
+              <attribute name="scale" value="2"/>
+            </attributes>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">Select the profile type you want to use below.</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">You will be redirected to the browser for your credentials.</property>
+            <property name="wrap">True</property>
+            <property name="wrap_mode">word-char</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">3</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+    <action-widgets>
+      <action-widget response="0">button3</action-widget>
+      <action-widget response="1">button4</action-widget>
+      <action-widget response="2">button5</action-widget>
+      <action-widget response="3">button6</action-widget>
+    </action-widgets>
+  </object>
   <object class="GtkDialog" id="custom-url-dialog">
     <property name="can_focus">False</property>
     <property name="modal">True</property>
@@ -313,7 +445,13 @@
           <object class="GtkLabel">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="label" translatable="yes">please enter a custom discovery URI</property>
+            <property name="label" translatable="yes">please enter a
+custom instance URI</property>
+            <property name="justify">center</property>
+            <attributes>
+              <attribute name="weight" value="ultraheavy"/>
+              <attribute name="scale" value="2"/>
+            </attributes>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -325,7 +463,7 @@
           <object class="GtkEntry" id="custom-url-entry">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
-            <property name="text" translatable="yes">http://</property>
+            <property name="text" translatable="yes">https://</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -340,93 +478,27 @@
       <action-widget response="1">button8</action-widget>
     </action-widgets>
   </object>
-  <object class="GtkDialog" id="profile-dialog">
+  <object class="GtkDialog" id="fetch-dialog">
     <property name="can_focus">False</property>
-    <property name="modal">True</property>
     <property name="type_hint">dialog</property>
     <property name="decorated">False</property>
     <property name="transient_for">eduvpn-window</property>
     <child internal-child="vbox">
       <object class="GtkBox">
         <property name="can_focus">False</property>
-        <property name="margin_left">20</property>
-        <property name="margin_right">20</property>
-        <property name="margin_top">20</property>
-        <property name="margin_bottom">20</property>
+        <property name="margin_left">10</property>
+        <property name="margin_right">10</property>
+        <property name="margin_top">10</property>
+        <property name="margin_bottom">10</property>
         <property name="orientation">vertical</property>
-        <property name="spacing">2</property>
+        <property name="spacing">1</property>
         <child internal-child="action_area">
           <object class="GtkButtonBox">
             <property name="can_focus">False</property>
-            <property name="layout_style">end</property>
-            <child>
-              <object class="GtkButton" id="button3">
-                <property name="label" translatable="yes">cancel</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-              </object>
-              <packing>
-                <property name="expand">True</property>
-                <property name="fill">True</property>
-                <property name="position">0</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkButton" id="button4">
-                <property name="label" translatable="yes">secure</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-              </object>
-              <packing>
-                <property name="expand">True</property>
-                <property name="fill">True</property>
-                <property name="position">1</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkButton" id="button5">
-                <property name="label" translatable="yes">institute</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-              </object>
-              <packing>
-                <property name="expand">True</property>
-                <property name="fill">True</property>
-                <property name="position">2</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkButton" id="button6">
-                <property name="label" translatable="yes">custom</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-              </object>
-              <packing>
-                <property name="expand">True</property>
-                <property name="fill">True</property>
-                <property name="position">3</property>
-              </packing>
-            </child>
           </object>
           <packing>
             <property name="expand">False</property>
             <property name="fill">False</property>
-            <property name="position">1</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkLabel">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="label" translatable="yes">choose your profile</property>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
             <property name="position">0</property>
           </packing>
         </child>
@@ -434,23 +506,20 @@
           <object class="GtkLabel">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="label" translatable="yes">Select the profile type you want to use below.
-You will be redirected to the browser for your credentials.</property>
+            <property name="label" translatable="yes">fetching data..</property>
+            <attributes>
+              <attribute name="weight" value="ultraheavy"/>
+              <attribute name="scale" value="2"/>
+            </attributes>
           </object>
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">2</property>
+            <property name="position">1</property>
           </packing>
         </child>
       </object>
     </child>
-    <action-widgets>
-      <action-widget response="0">button3</action-widget>
-      <action-widget response="1">button4</action-widget>
-      <action-widget response="2">button5</action-widget>
-      <action-widget response="3">button6</action-widget>
-    </action-widgets>
   </object>
   <object class="GtkDialog" id="token-dialog">
     <property name="can_focus">False</property>
@@ -610,6 +679,10 @@ Please follow instructions in your browser.</property>
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="label" translatable="yes">Choose your provider</property>
+            <attributes>
+              <attribute name="weight" value="ultraheavy"/>
+              <attribute name="scale" value="2"/>
+            </attributes>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -643,7 +716,7 @@ Please follow instructions in your browser.</property>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkTreeViewColumn" id="provider-name">
+                      <object class="GtkTreeViewColumn" id="instances-name">
                         <property name="title" translatable="yes">name</property>
                         <child>
                           <object class="GtkCellRendererText"/>
@@ -654,7 +727,7 @@ Please follow instructions in your browser.</property>
                       </object>
                     </child>
                     <child>
-                      <object class="GtkTreeViewColumn" id="provider-column-icon">
+                      <object class="GtkTreeViewColumn" id="instances-column-icon">
                         <property name="title" translatable="yes">icon</property>
                         <child>
                           <object class="GtkCellRendererPixbuf"/>
@@ -683,6 +756,145 @@ Please follow instructions in your browser.</property>
     <action-widgets>
       <action-widget response="0">instance-cancel</action-widget>
       <action-widget response="1">instance-continue</action-widget>
+    </action-widgets>
+  </object>
+  <object class="GtkListStore" id="profiles-model">
+    <columns>
+      <!-- column-name display_name -->
+      <column type="gchararray"/>
+      <!-- column-name profile_id -->
+      <column type="gchararray"/>
+      <!-- column-name two_factor -->
+      <column type="gboolean"/>
+    </columns>
+  </object>
+  <object class="GtkDialog" id="profiles-dialog">
+    <property name="can_focus">False</property>
+    <property name="border_width">8</property>
+    <property name="title" translatable="yes">Profile selection</property>
+    <property name="modal">True</property>
+    <property name="default_width">400</property>
+    <property name="default_height">400</property>
+    <property name="type_hint">dialog</property>
+    <property name="decorated">False</property>
+    <property name="transient_for">eduvpn-window</property>
+    <child internal-child="vbox">
+      <object class="GtkBox">
+        <property name="can_focus">False</property>
+        <property name="margin_left">10</property>
+        <property name="margin_right">10</property>
+        <property name="margin_top">10</property>
+        <property name="margin_bottom">10</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">18</property>
+        <child internal-child="action_area">
+          <object class="GtkButtonBox">
+            <property name="can_focus">False</property>
+            <property name="layout_style">end</property>
+            <child>
+              <object class="GtkButton" id="profile-cancel">
+                <property name="label" translatable="yes">cancel</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="profile-continue">
+                <property name="label" translatable="yes">continue</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">Choose your profile</property>
+            <attributes>
+              <attribute name="weight" value="ultraheavy"/>
+              <attribute name="scale" value="2"/>
+            </attributes>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkOverlay" id="profiles-overlay">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <child>
+              <object class="GtkScrolledWindow" id="profiles-tree-scrolledwindow">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="shadow_type">in</property>
+                <property name="min_content_width">300</property>
+                <property name="min_content_height">200</property>
+                <child>
+                  <object class="GtkTreeView" id="profiles-view">
+                    <property name="width_request">300</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="model">profiles-model</property>
+                    <property name="headers_visible">False</property>
+                    <property name="show_expanders">False</property>
+                    <property name="activate_on_single_click">True</property>
+                    <child internal-child="selection">
+                      <object class="GtkTreeSelection" id="profiles-selection">
+                        <property name="mode">browse</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkTreeViewColumn" id="provider-name1">
+                        <property name="title" translatable="yes">name</property>
+                        <child>
+                          <object class="GtkCellRendererText"/>
+                          <attributes>
+                            <attribute name="text">0</attribute>
+                          </attributes>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="index">-1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">2</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+    <action-widgets>
+      <action-widget response="0">profile-cancel</action-widget>
+      <action-widget response="1">profile-continue</action-widget>
     </action-widgets>
   </object>
 </interface>
