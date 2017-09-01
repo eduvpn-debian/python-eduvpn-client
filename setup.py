@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-__version__ = "0.6"
+__version__ = "0.6.1"
 
 
 install_requires = [
@@ -14,6 +14,7 @@ install_requires = [
 extras_require = {
     'nm': ['python-networkmanager'],
     'ui': ['pygobject'],
+    'osx': ['pync'],
 }
 
 scripts = [
