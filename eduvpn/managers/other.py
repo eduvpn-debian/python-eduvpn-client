@@ -1,3 +1,8 @@
+# python-eduvpn-client - The GNU/Linux eduVPN client and Python API
+#
+# Copyright: 2017, The Commons Conservancy eduVPN Programme
+# SPDX-License-Identifier: GPL-3.0+
+
 import json
 import logging
 import os
@@ -67,3 +72,6 @@ def disconnect_provider(uuid):
 def status_provider(uuid):
     logger.info("requesting status profile with uuid {} for non-Linux OS".format(uuid))
     logger.error("not supported on non dbus platform")
+
+def is_provider_connected(uuid):
+    return False

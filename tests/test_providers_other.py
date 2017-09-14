@@ -1,3 +1,8 @@
+# python-eduvpn-client - The GNU/Linux eduVPN client and Python API
+#
+# Copyright: 2017, The Commons Conservancy eduVPN Programme
+# SPDX-License-Identifier: GPL-3.0+
+
 import unittest
 
 from eduvpn.managers.other import list_providers, store_provider, delete_provider, connect_provider, status_provider
@@ -14,9 +19,9 @@ class TestProviderOther(unittest.TestCase):
         list_providers()
 
     def test_store_provider(self):
-        store_provider(api_base_uri='test', profile_id='test', name='test', token='test', connection_type='test',
+        store_provider(api_base_uri='test', profile_id='test', display_name='test', token='test', connection_type='test',
                        authorization_type='test', profile_display_name='test',
-                       two_factor='test', cert='test', key='test', config='test')
+                       two_factor='test', cert='test', key='test', config='test', icon_data=None)
 
     @unittest.skip("todo")
     def test_delete_provider(self):

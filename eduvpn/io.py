@@ -1,3 +1,8 @@
+# python-eduvpn-client - The GNU/Linux eduVPN client and Python API
+#
+# Copyright: 2017, The Commons Conservancy eduVPN Programme
+# SPDX-License-Identifier: GPL-3.0+
+
 """
 Helper functions related to local IO
 """
@@ -46,7 +51,7 @@ def write_cert(content, type_, unique_name):
         os.makedirs(os.path.dirname(path))
     with open(path, "w") as f:
         f.write(content)
-    os.chmod(path, 0600)
+    os.chmod(path, 0o600)
     return path
 
 
@@ -81,8 +86,12 @@ def store_metadata(path, **metadata):
 
 
 def get_metadata(uuid):
-    metadata_path = os.path.join(config_path, uuid + '.json')
-    return json.load(open(metadata_path, 'r'))
+    try:
+        metadata_path = os.path.join(config_path, uuid + '.json')
+        return json.load(open(metadata_path, 'r'))
+    except IOError as e:
+        logger.error("can't open metdata file for {}: {}".format(uuid, str(e)))
+        return {'uuid': uuid, 'display_name': uuid, 'icon_data': None, 'connection_type': 'unknown'}
 
 
 def mkdir_p(path):
