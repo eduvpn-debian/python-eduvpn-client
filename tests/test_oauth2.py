@@ -1,3 +1,8 @@
+# python-eduvpn-client - The GNU/Linux eduVPN client and Python API
+#
+# Copyright: 2017, The Commons Conservancy eduVPN Programme
+# SPDX-License-Identifier: GPL-3.0+
+
 import unittest
 import mock
 
@@ -11,7 +16,10 @@ class TestCrypto(unittest.TestCase):
     @mock.patch('eduvpn.oauth2.one_request')
     @mock.patch('webbrowser.open')
     def test_get_oauth_token_code(self, moch_open, moch_one_request):
-        get_oauth_token_code(port=1025)
+        moch_one_request.return_value({"code": "blabla"})
+        # todo
+        with self.assertRaises(Exception):
+            get_oauth_token_code(port=1025)
 
     def test_get_open_port(self):
         get_open_port()

@@ -106,3 +106,9 @@ ENV/
 
 #glade temp files
 *~
+\#eduvpn.ui\#
+
+
+tests/eduvpn.ovpn
+eduvpn.ovpn
+

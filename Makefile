@@ -1,6 +1,7 @@
 
 .PHONY: deb fedora doc
 
+# unfortunatly networkmanager doesn't have a python3 package
 deb:
 	sudo apt update
 	sudo apt install -y \
@@ -15,11 +16,15 @@ deb:
 		python3-nacl \
 		python3-requests-oauthlib \
 		python3-gi \
+		python3-dev \
+		libdbus-glib-1-dev
 
 
 
 fedora:
 	sudo dnf install -y \
+		gtk3 \
+		libnotify \
 		python-gobject \
 		python2-networkmanager \
 		python2-pydbus \
@@ -46,11 +51,13 @@ fedora:
 	virtualenv --system-site-packages -p python2 .virtualenv
 
 .virtualenv/bin/eduvpn-client: .virtualenv/
-	.virtualenv/bin/pip install -e .
+	.virtualenv/bin/pip install -e ".[ui,nm]"
 
 .virtualenv3/:
 	virtualenv --system-site-packages -p python3 .virtualenv3
-	.virtualenv3/bin/pip install -e .
+
+.virtualenv3/bin/eduvpn-client: .virtualenv3/
+	.virtualenv3/bin/pip install -e ".[ui]"
 
 doc:  .virtualenv/
 	.virtualenv/bin/pip install -r doc/requirements.txt
@@ -64,8 +71,8 @@ test3: .virtualenv3/
 	.virtualenv3/bin/pip install -r tests/requirements.txt
 	.virtualenv3/bin/nosenosetests
 
-run: .virtualenv/bin/eduvpn-client
-	.virtualenv/bin/eduvpn-client
+run: .virtualenv3/bin/eduvpn-client
+	.virtualenv3/bin/eduvpn-client
 
 dockers:
 	for i in `ls docker/Dockerfile*`; do docker build . -f $$i; done

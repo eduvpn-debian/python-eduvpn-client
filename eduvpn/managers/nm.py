@@ -1,3 +1,8 @@
+# python-eduvpn-client - The GNU/Linux eduVPN client and Python API
+#
+# Copyright: 2017, The Commons Conservancy eduVPN Programme
+# SPDX-License-Identifier: GPL-3.0+
+
 import os
 import logging
 import json
@@ -62,7 +67,7 @@ def list_providers():
             metadata = json.load(open(os.path.join(config_path, conn['uuid'] + '.json'), 'r'))
         except Exception as e:
             logger.error("can't load metadata file: " + str(e))
-            yield {'uuid': conn['uuid'], 'display_name': conn['id']}
+            yield {'uuid': conn['uuid'], 'display_name': conn['id'], 'icon_data': None, 'connection_type': 'unknown'}
         else:
             yield metadata
 
@@ -151,5 +156,21 @@ def status_provider(uuid):
     raise NotImplementedError
 
 
+def update_config_provider(uuid, display_name, config):
+    config_dict = parse_ovpn(config)
+    ca_path = write_cert(config_dict.pop('ca'), 'ca', uuid)
+    ta_path = write_cert(config_dict.pop('tls-auth'), 'ta', uuid)
+    nm_config = _gen_nm_settings(config_dict, uuid=uuid, display_name=display_name)
+    old_conn = NetworkManager.Settings.GetConnectionByUuid(uuid)
+    old_settings = old_conn.GetSettings()
+    nm_config['vpn']['data'].update({'cert': old_settings['vpn']['data']['cert'],
+                                     'key': old_settings['vpn']['data']['key'],
+                                     'ca': ca_path, 'ta': ta_path})
+    old_conn.Delete()
+    _add_nm_config(nm_config)
 
 
+def update_keys_provider(uuid, cert, key):
+    logger.info("updating key pare for uuid {}".format(uuid))
+    cert_path = write_cert(cert, 'cert', uuid)
+    key_path = write_cert(key, 'key', uuid)

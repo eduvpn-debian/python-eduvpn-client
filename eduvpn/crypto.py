@@ -1,3 +1,9 @@
+# python-eduvpn-client - The GNU/Linux eduVPN client and Python API
+#
+# Copyright: 2017, The Commons Conservancy eduVPN Programme
+# SPDX-License-Identifier: GPL-3.0+
+
+
 import base64
 import hashlib
 import random
@@ -26,7 +32,9 @@ def gen_code_challenge(code_verifier):
     args:
         code_verifier (str): a string generated with `gen_code_verifier()`
     """
-    return base64.urlsafe_b64encode(hashlib.sha256(code_verifier).digest()).rstrip('=')
+    sha256 = hashlib.sha256(code_verifier.encode())
+    encoded = base64.urlsafe_b64encode(sha256.digest())
+    return encoded.rstrip(b'=')
 
 
 def make_verifier(key):
