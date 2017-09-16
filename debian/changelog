@@ -1,5 +1,6 @@
-python-eduvpn-client (1.0rc1-2) stable; urgency=medium
+python-eduvpn-client (1.0rc2-1) stable; urgency=medium
 
+  * new upstream release
   * add gir1.2-gtk-3.0 gir1.2-notify-0.7 dependencies
 
  -- Gijs Molenaar (launchpad ppa build key) <gijs@pythonic.nl>  Sat, 16 Sep 2017 14:02:16 +0200
