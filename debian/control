@@ -37,7 +37,7 @@ Testsuite: autopkgtest-pkg-python
 
 Package: python-eduvpn-client
 Architecture: all
-Depends: ${python:Depends}, ${misc:Depends}, python-gi, python-networkmanager, python-dbus
+Depends: ${python:Depends}, ${misc:Depends}, python-gi, python-networkmanager, python-dbus, gir1.2-gtk-3.0, gir1.2-notify-0.7
 Suggests: python-eduvpn-client-doc
 Description: eduVPN client (Python 2)
  This package installs the library for Python 2.
