@@ -5,7 +5,7 @@
 
 from setuptools import setup, find_packages
 
-__version__ = "1.0rc1"
+__version__ = "1.0rc2"
 
 
 install_requires = [
@@ -14,13 +14,10 @@ install_requires = [
     'requests_oauthlib',
     'future',
     'configparser',
-    #'dbus-python',  # we depend on the dbus package but the debian packages are not in pip freeze
 ]
 
 extras_require = {
-    'nm': ['python-networkmanager'],
-    'ui': ['pygobject'],
-    'osx': ['pync'],
+    'client': ['python-networkmanager', 'pygobject'],
 }
 
 scripts = [
@@ -60,9 +57,9 @@ setup(
     tests_require=['pytest', 'mock'],
     test_suite="tests",
     keywords="vpn openvpn networking security",
-    url="https://github.com/eduvpn/eduvpn-linux-client",
+    url="https://github.com/eduvpn/python-eduvpn-client",
     classifiers=[
-        "Development Status :: 4 - Beta",
+        "Development Status :: 5 - Stable",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: POSIX",
         "Programming Language :: Python",

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Generated with glade 3.20.0 -->
 <interface>
-  <requires lib="gtk+" version="3.20"/>
+  <requires lib="gtk+" version="3.18"/>
   <!-- interface-local-resource-path . -->
   <object class="GtkListStore" id="configs-model">
     <columns>
@@ -1182,7 +1182,11 @@ Please follow instructions in your browser.
                       <object class="GtkTreeViewColumn" id="provider-name1">
                         <property name="title" translatable="yes">name</property>
                         <child>
-                          <object class="GtkCellRendererText"/>
+                          <object class="GtkCellRendererText">
+                            <property name="xpad">5</property>
+                            <property name="ypad">5</property>
+                            <property name="scale">1.1000000000000001</property>
+                          </object>
                           <attributes>
                             <attribute name="text">0</attribute>
                           </attributes>

@@ -7,15 +7,9 @@ import os
 import sys
 import unittest
 from dbus.exceptions import DBusException
+from eduvpn.manager import *
 
 
-run = os.name == 'posix' and not sys.platform.startswith('darwin')
-
-if run:
-    from eduvpn.managers.nm import list_providers, store_provider, delete_provider, connect_provider, status_provider
-
-
-@unittest.skipUnless(run, "requires NetworkManager (Linux)")
 class TestNm(unittest.TestCase):
     def setUp(self):
         self.name = 'test'
@@ -39,7 +33,3 @@ class TestNm(unittest.TestCase):
     def test_connect_provider(self):
         with self.assertRaises(DBusException):
             connect_provider(self.name)
-
-    def test_status_provider(self):
-        with self.assertRaises(DBusException):
-            status_provider(self.name)
