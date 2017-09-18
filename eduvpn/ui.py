@@ -16,17 +16,17 @@ gi.require_version('Notify', '0.7')
 
 from gi.repository import GObject, Gtk, GLib, GdkPixbuf
 
-# this need to be one of the first to import
-import dbus.mainloop.glib
-dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-from dbus.exceptions import DBusException
 
-from eduvpn.util import error_helper, thread_helper
+from eduvpn.util import have_dbus
+
+import dbus.mainloop.glib
+
+from eduvpn.util import error_helper, thread_helper, get_prefix
 from eduvpn.config import secure_internet_uri, institute_access_uri, verify_key, icon_size
 from eduvpn.crypto import make_verifier, gen_code_verifier
 from eduvpn.oauth2 import get_open_port, create_oauth_session, get_oauth_token_code, oauth_from_token
 from eduvpn.manager import connect_provider, list_providers, store_provider, delete_provider, disconnect_provider, \
-    is_provider_connected, update_config_provider, update_keys_provider, update_token
+    is_provider_connected, update_config_provider, update_keys_provider, update_token, vpn_monitor, active_connections
 from eduvpn.remote import get_instances, get_instance_info, get_auth_url, list_profiles, create_keypair, \
     get_profile_config, system_messages, user_messages, user_info
 from eduvpn.notify import notify
@@ -35,22 +35,21 @@ from eduvpn.util import bytes2pixbuf
 from eduvpn.exceptions import EduvpnAuthException
 
 
-import NetworkManager
-
 logger = logging.getLogger(__name__)
 
 
 class EduVpnApp:
-    def __init__(self, here):
-        self.here = here
+    def __init__(self):
+        """setup UI thingies, don't do any fetching or DBus communication yet"""
 
-        # hack to make the reopen url button work
+        self.prefix = get_prefix()
+
+        # minimal global state to pass around data between steps where otherwise difficult
         self.auth_url = None
-
-        # sorry, global state to pass around data between steps
         self.selected_uuid = None
         self.selected_metadata = None
 
+        # the signals coming from the GTK ui
         handlers = {
             "delete_window": Gtk.main_quit,
             "add_config": self.selection_connection_step,
@@ -59,23 +58,25 @@ class EduVpnApp:
             "connect_set": self.connect_set,
         }
 
-        NetworkManager.NetworkManager.connect_to_signal('PropertiesChanged', self.connection_state_change)
-
         self.builder = Gtk.Builder()
-        self.builder.add_from_file(os.path.join(self.here, "../share/eduvpn/eduvpn.ui"))
+        self.builder.add_from_file(os.path.join(self.prefix, 'share/eduvpn/eduvpn.ui'))
         self.builder.connect_signals(handlers)
 
         self.window = self.builder.get_object('eduvpn-window')
         self.verifier = make_verifier(verify_key)
 
         self.window.set_position(Gtk.WindowPosition.CENTER)
-        self.window.show_all()
 
-        logo = os.path.join(self.here, '../share/eduvpn/eduvpn.png')
-        self.icon_placeholder = GdkPixbuf.Pixbuf.new_from_file_at_scale(logo, icon_size['width'], icon_size['height'], True)
+        logo = os.path.join(self.prefix, 'share/eduvpn/eduvpn.png')
+        self.icon_placeholder = GdkPixbuf.Pixbuf.new_from_file_at_scale(logo, icon_size['width'],
+                                                                        icon_size['height'], True)
         self.icon_placeholder_big = GdkPixbuf.Pixbuf.new_from_file_at_scale(logo, icon_size['width']*2,
                                                                             icon_size['height']*2, True)
 
+    def run(self):
+        # attach a callback to VPN connection monitor
+        vpn_monitor(self.vpn_status_change)
+        self.window.show_all()
         self.update_providers()
 
     def connect(self, selection):
@@ -83,7 +84,7 @@ class EduVpnApp:
         model, treeiter = selection.get_selected()
         if treeiter is not None:
             uuid, display_name = model[treeiter]
-            notify("Connecting to {}".format(display_name))
+            notify("eduVPN connecting...", "Connecting to {}".format(display_name))
             connect_provider(uuid)
 
     def disconnect(self, selection):
@@ -91,7 +92,7 @@ class EduVpnApp:
         model, treeiter = selection.get_selected()
         if treeiter is not None:
             uuid, display_name = model[treeiter]
-            notify("Disconnecting to {}".format(display_name))
+            notify("eduVPN disconnecting...", "Disconnecting from '{}'".format(display_name))
             disconnect_provider(uuid)
 
     def update_providers(self):
@@ -119,6 +120,7 @@ class EduVpnApp:
             introduction.show()
 
     def selection_connection_step(self, _):
+        """The connection type selection step"""
         logger.info("add configuration clicked")
         dialog = self.builder.get_object('connection-type-dialog')
         dialog.show_all()
@@ -140,6 +142,7 @@ class EduVpnApp:
             self.custom_url()
 
     def custom_url(self):
+        """the custom URL dialog where a user can enter a custom instance URL"""
         dialog = self.builder.get_object('custom-url-dialog')
         entry = self.builder.get_object('custom-url-entry')
         dialog.show_all()
@@ -162,6 +165,7 @@ class EduVpnApp:
                 return
 
     def fetch_instance_step(self, discovery_uri, connection_type):
+        """fetch list of instances"""
         logger.info("fetching instances step")
         dialog = self.builder.get_object('fetch-dialog')
         dialog.show_all()
@@ -180,6 +184,7 @@ class EduVpnApp:
         thread_helper(background())
 
     def select_instance_step(self, connection_type, authorization_type, instances):
+        """prompt user with instance dialog"""
         logger.info("presenting instances to user")
         dialog = self.builder.get_object('instances-dialog')
         model = self.builder.get_object('instances-model')
@@ -214,6 +219,7 @@ class EduVpnApp:
                 logger.info("nothing selected")
 
     def browser_step(self, display_name, instance_base_uri, connection_type, authorization_type, icon_data):
+        """The notorious browser step. starts webserver, wait for callback, show token dialog"""
         logger.info("opening token dialog")
         dialog = self.builder.get_object('token-dialog')
         url_dialog = self.builder.get_object('redirecturl-dialog')
@@ -276,6 +282,7 @@ class EduVpnApp:
 
     def fetch_profile_step(self, token, api_base_uri, oauth, display_name, connection_type, authorization_type,
                            icon_data, instance_base_uri):
+        """background action step, fetches profiles and shows 'fetching' screen"""
         logger.info("fetching profile step")
         dialog = self.builder.get_object('fetch-dialog')
         dialog.show_all()
@@ -289,7 +296,7 @@ class EduVpnApp:
                                   connection_type, authorization_type, icon_data, instance_base_uri)
                 elif len(profiles) == 1:
                     profile_display_name, profile_id, two_factor = profiles[0]
-                    self.finalizing_step(oauth, api_base_uri, profile_id, display_name, token, connection_type,
+                    self.two_auth_step(oauth, api_base_uri, profile_id, display_name, token, connection_type,
                                          authorization_type, profile_display_name, two_factor, icon_data,
                                          instance_base_uri)
                 else:
@@ -306,6 +313,7 @@ class EduVpnApp:
 
     def select_profile_step(self, token, profiles, api_base_uri, oauth, display_name, connection_type,
                             authorization_type, icon_data, instance_base_uri):
+        """the profile selection step, doesn't do anything if only one profile"""
         logger.info("opening profile dialog")
 
         dialog = self.builder.get_object('profiles-dialog')
@@ -323,14 +331,54 @@ class EduVpnApp:
             model, treeiter = selection.get_selected()
             if treeiter:
                 profile_display_name, profile_id, two_factor = model[treeiter]
-                self.finalizing_step(oauth, api_base_uri, profile_id, display_name, token, connection_type,
+                self.two_auth_step(oauth, api_base_uri, profile_id, display_name, token, connection_type,
                                      authorization_type, profile_display_name, two_factor, icon_data, instance_base_uri)
             else:
                 logger.error("nothing selected")
                 return
 
+    def two_auth_step(self, oauth, api_base_uri, profile_id, display_name, token, connection_type, authorization_type,
+                      profile_display_name, two_factor, icon_data, instance_base_uri):
+        """checks if 2auth is enabled. If more than 1 option presents user with choice"""
+        dialog = self.builder.get_object('2fa-dialog')
+
+        def update(options):
+            two_dialog = self.builder.get_object('2fa-dialog')
+            for i, option in enumerate(options):
+                dialog.add_button(option, i)
+            two_dialog.show()
+            index = int(dialog.run())
+            if index >= 0:
+                username = options[index]
+                logger.info("user selected '{}'".format(username))
+                self.finalizing_step(oauth, api_base_uri, profile_id, display_name, token, connection_type,
+                                     authorization_type, profile_display_name, two_factor, icon_data,
+                                     instance_base_uri, username)
+            dialog.destroy()
+
+        def background():
+            info = user_info(oauth, api_base_uri)
+            username = None
+            if info['is_disabled']:
+                GLib.idle_add(error_helper, self.window, "This account has been disabled", "")
+
+            if 'two_factor_enrolled_with' in info:
+                options = info['two_factor_enrolled_with']
+                if len(options) > 1:
+                    GLib.idle_add(update, options)
+                    return
+                elif len(options) == 1:
+                    username = options[0]
+                    logger.info("auto selected username {} for 2 factor authentication".format(username))
+                GLib.idle_add(self.finalizing_step, oauth, api_base_uri, profile_id, display_name, token,
+                              connection_type, authorization_type, profile_display_name, two_factor, icon_data,
+                              instance_base_uri, username)
+
+        thread_helper(background)
+
     def finalizing_step(self, oauth, api_base_uri, profile_id, display_name, token, connection_type, authorization_type,
-                        profile_display_name, two_factor, icon_data, instance_base_uri):
+                        profile_display_name, two_factor, icon_data, instance_base_uri, username):
+        """finalise the add profile flow, add a configuration"""
         logger.info("finalizing step")
         dialog = self.builder.get_object('fetch-dialog')
         dialog.show_all()
@@ -339,18 +387,17 @@ class EduVpnApp:
             try:
                 cert, key = create_keypair(oauth, api_base_uri)
                 config = get_profile_config(oauth, api_base_uri, profile_id)
-                # todo: check user data
-                info = user_info(oauth, api_base_uri)
             except Exception as e:
                 GLib.idle_add(error_helper, dialog, "can't finalize configuration", "{}: {}".format(type(e).__name__,
-                                                                                                   str(e)))
+                                                                                                    str(e)))
                 GLib.idle_add(dialog.hide)
                 raise
             else:
                 try:
                     store_provider(api_base_uri, profile_id, display_name, token, connection_type, authorization_type,
-                                   profile_display_name, two_factor, cert, key, config, icon_data, instance_base_uri)
-                    notify("Added eduVPN configuration {}".format(display_name))
+                                   profile_display_name, two_factor, cert, key, config, icon_data, instance_base_uri,
+                                   username)
+                    notify("eduVPN provider added", "added provider '{}'".format(display_name))
                 except Exception as e:
                     GLib.idle_add(error_helper, dialog, "can't store configuration", "{} {}".format(type(e).__name__,
                                                                                                     str(e)))
@@ -363,6 +410,7 @@ class EduVpnApp:
         thread_helper(background)
 
     def delete(self, selection):
+        """called when the user presses the - button"""
         logger.info("delete provider clicked")
         model, treeiter = selection.get_selected()
         if not treeiter:
@@ -379,15 +427,18 @@ class EduVpnApp:
             logger.info("deleting provider config")
             try:
                 delete_provider(uuid)
-                notify("Deleted eduVPN configuration {}".format(display_name))
+                notify("eduVPN provider deleted", "Deleted '{}'".format(display_name))
             except Exception as e:
-                GLib.idle_add(error_helper, self.window, "can't delete profile", "{}: {}".format(type(e).__name__, str(e)))
+                error_helper(self.window, "can't delete profile", str(e))
+                dialog.destroy()
+                raise
             GLib.idle_add(self.update_providers)
         elif response == Gtk.ResponseType.NO:
             logger.info("not deleting provider config")
         dialog.destroy()
 
     def reauth(self, display_name, uuid, instance_base_uri, connection_type, authorization_type, icon_data):
+        """called when the authorization is expired"""
         logger.info("looks like authorization is expired or removed")
         dialog = Gtk.MessageDialog(self.window, Gtk.DialogFlags.MODAL, Gtk.MessageType.QUESTION,
                                    Gtk.ButtonsType.YES_NO,
@@ -400,17 +451,21 @@ class EduVpnApp:
         elif response == Gtk.ResponseType.NO:
             pass
         dialog.destroy()
-        
+
     def fetch_messages(self, api_base_uri, token, uuid, display_name, instance_base_uri, connection_type,
                        authorization_type, icon_data):
         logger.info("fetching user and system messages from {} ({})".format(display_name, api_base_uri))
 
-        def background(buffer, token):
+        def background(label, token):
             oauth = oauth_from_token(token, update_token, uuid)
             text = ""
             try:
-                messages_user = user_messages(oauth, api_base_uri)
-                messages_system = system_messages(oauth, api_base_uri)
+                messages_user = list(user_messages(oauth, api_base_uri))
+                messages_system = list(system_messages(oauth, api_base_uri))
+                info = user_info(oauth, api_base_uri)
+                if info['is_disabled']:
+                    GLib.idle_add(error_helper, self.window, "This account has been disabled", "")
+
             except EduvpnAuthException:
                 GLib.idle_add(self.reauth, display_name, uuid, instance_base_uri, connection_type, authorization_type,
                               icon_data)
@@ -418,34 +473,32 @@ class EduVpnApp:
                 GLib.idle_add(error_helper, self.window, "Can't fetch user messages", str(e))
                 raise
             else:
-                for message in messages_user:
-                    logger.info(message)
-                    date_time = message['date_time']
-                    content = message['message']
-                    type = message['notification']
-                    text += date_time + "\n"
-                    text += content + "\n\n"
-                for message in messages_system:
-                    logger.info(message)
-                    date_time = message['date_time']
-                    content = message['message']
-                    type = message['type']
-                    text += date_time + "\n"
-                    text += content + "\n\n"
-                GLib.idle_add(buffer.set_text, text)
+                for date_time, type_, message in messages_user:
+                    logger.info("user message at {}: {}".format(date_time, message))
+                    text += "<b><big>{}</big></b>\n".format(date_time)
+                    text += "<small><i>user, {}</i></small>\n".format(type_)
+                    text += "{}\n\n".format(message)
+                for date_time, type_, message in messages_system:
+                    logger.info("system message at {}: {}".format(date_time, message))
+                    text += "<b><big>{}</big></b>\n".format(date_time)
+                    text += "<small><i>system, {}</i></small>\n".format(type_)
+                    text += "{}\n\n".format(message)
+                GLib.idle_add(label.set_markup, text)
 
-        buffer = self.builder.get_object('messages-buffer')
-        thread_helper(lambda: background(buffer, token))
+        label = self.builder.get_object('messages-label')
+        thread_helper(lambda: background(label, token))
 
-    def select_config(self, list):
+    def select_config(self, list_):
+        """called when a users selects a configuration"""
         notebook = self.builder.get_object('outer-notebook')
         switch = self.builder.get_object('connect-switch')
         ipv4_label = self.builder.get_object('ipv4-label')
         ipv6_label = self.builder.get_object('ipv6-label')
+        twofa_label = self.builder.get_object('2fa-label')
         name_label = self.builder.get_object('name-label')
         profile_label = self.builder.get_object('profile-label')
         profile_image = self.builder.get_object('profile-image')
-        model, treeiter = list.get_selected()
+        model, treeiter = list_.get_selected()
         if not treeiter:
             logger.info("no configuration selected, showing main logo")
             notebook.set_current_page(0)
@@ -453,7 +506,7 @@ class EduVpnApp:
         else:
             uuid, display_name, icon, _ = model[treeiter]
             self.selected_uuid = uuid
-            logger.info("{} ({}) configuration was selected".format(display_name, uuid))
+            logger.info("configuration was selected {} ({})".format(display_name, uuid))
             self.selected_metadata = get_metadata(uuid)
             name_label.set_text(display_name)
             if self.selected_metadata['icon_data']:
@@ -472,6 +525,16 @@ class EduVpnApp:
             else:
                 ipv4_label.set_text("")
                 ipv6_label.set_text("")
+
+            if 'username' in self.selected_metadata:
+                username = self.selected_metadata['username']
+                if username:
+                    twofa_label.set_text(username)
+                else:
+                    twofa_label.set_text("")
+            else:
+                twofa_label.set_text("")
+
             notebook.show_all()
             notebook.set_current_page(1)
 
@@ -482,70 +545,76 @@ class EduVpnApp:
             else:
                 logger.info("metadata doesnt contain api_base_uri and/or token data")
 
-    def connection_state_change(self, *args, **kwargs):
-        """Called when a networkmanager status change is emitted"""
+    def vpn_status_change(self, *args, **kwargs):
+        """called when the status of a VPN connection changes"""
+        logger.info("VPN status change")
+        switch = self.builder.get_object('connect-switch')
+        ipv4_label = self.builder.get_object('ipv4-label')
+        ipv6_label = self.builder.get_object('ipv6-label')
 
-        # this is VERY messy, but it is close to impossible to support the various networkmanager signals floating
-        #around.
+        selected_uuid_active = False
+        for active in active_connections():
+            try:
+                if active.Uuid == self.selected_uuid:
+                    selected_uuid_active = True
+                    if active.State == 2:  # activated
+                        logger.info("setting ip for {}".format(self.selected_uuid))
+                        switch.set_active(True)
+                        GLib.idle_add(ipv4_label.set_text, active.Ip4Config.AddressData[0]['address'])
+                        GLib.idle_add(ipv6_label.set_text, active.Ip6Config.AddressData[0]['address'])
+                        notify("eduVPN connected", "Connected to '{}'".format(self.selected_metadata['display_name']))
+                    elif active.State == 1:  # activating
+                        switch.set_active(True)
+                        notify("eduVPN connecting...", "Activating '{}'".format(self.selected_metadata['display_name']))
+                    else:
+                        logger.info("clearing ip for '{}'".format(self.selected_uuid))
+                        switch.set_active(False)
+                        GLib.idle_add(ipv4_label.set_text, "")
+                        GLib.idle_add(ipv6_label.set_text, "")
+                    break
+            except Exception as e:
+                logger.warning("probably race condition in network manager: {}".format(e))
+                pass
 
-        def we_have_active_connections(active_conns):
-            switch = self.builder.get_object('connect-switch')
-            ipv4_label = self.builder.get_object('ipv4-label')
-            ipv6_label = self.builder.get_object('ipv6-label')
-            active = False
-            for conn in active_conns:
-                try:
-                    if conn.Vpn and conn.Uuid == self.selected_uuid:
-                        active = True
-                        ipv4_label.set_text(conn.Ip4Config.AddressData[0]['address'])
-                        ipv6_label.set_text(conn.Ip6Config.AddressData[0]['address'])
-                except (DBusException, AttributeError) as e:
-                    pass
-            if not active:
-                logger.info("selected VPN {} is NOT active!".format(self.selected_uuid))
-                ipv4_label.set_text("")
-                ipv6_label.set_text("")
-
-        if type(args[0]) == dict:
-            # Old API
-            if 'ActiveConnections' in args[0]:
-                logger.info("old type signal from network manager")
-                we_have_active_connections(args[0]['ActiveConnections'])
-            else:
-                logger.info("ignoring useless signal event")
-        elif args[0] != u'org.freedesktop.NetworkManager':
-            # new api
-            logger.info("new type signal from network manager")
-            we_have_active_connections(args[0].ActiveConnections)
+        if not selected_uuid_active:
+            logger.info("Our selected profile not active {}".format(self.selected_uuid))
+            notify("eduVPN Disconnected", "Disconnected from '{}'".format(self.selected_metadata['display_name']))
+            switch.set_active(False)
+            GLib.idle_add(ipv4_label.set_text, "")
+            GLib.idle_add(ipv6_label.set_text, "")
 
     def activate_connection(self, uuid, display_name):
         """do the actual connecting action"""
         logger.info("Connecting to {}".format(display_name))
-        notify("Connecting to {}".format(display_name))
+        notify("eduVPN connecting...", "Connecting to '{}'".format(display_name))
         try:
-            if ('profile_id' in self.selected_metadata and
-                        'api_base_uri' in self.selected_metadata and
-                        'token' in self.selected_metadata):
-                profile_id = self.selected_metadata['profile_id']
-                api_base_uri = self.selected_metadata['api_base_uri']
+            for m in 'profile_id', 'api_base_uri', 'token', 'username':
+                if m not in self.selected_metadata:
+                    logger.error("metadata missing for uuid {}, can't update config".format(uuid))
+                    connect_provider(uuid)
+                    return
 
-                oauth = oauth_from_token(self.selected_metadata['token'], update_token, uuid)
-                config = get_profile_config(oauth, api_base_uri, profile_id)
-                update_config_provider(uuid=uuid, display_name=display_name, config=config)
+            profile_id = self.selected_metadata['profile_id']
+            api_base_uri = self.selected_metadata['api_base_uri']
+            username = self.selected_metadata['username']
 
-                if datetime.now() > datetime.fromtimestamp(self.selected_metadata['token']['expires_at']):
-                    logger.info("key pair is expired")
-                    cert, key = create_keypair(oauth, api_base_uri)
-                    update_keys_provider(uuid, cert, key)
+            oauth = oauth_from_token(self.selected_metadata['token'], update_token, uuid)
+            config = get_profile_config(oauth, api_base_uri, profile_id)
+            update_config_provider(uuid=uuid, display_name=display_name, config=config, username=username)
 
-            else:
-                logger.error("metadata missing for uuid {}, can't update config".format(uuid))
+            if datetime.now() > datetime.fromtimestamp(self.selected_metadata['token']['expires_at']):
+                logger.info("key pair is expired")
+                cert, key = create_keypair(oauth, api_base_uri)
+                update_keys_provider(uuid, cert, key)
+
             connect_provider(uuid)
+
         except Exception as e:
             error_helper(self.window, "can't enable connection", "{}: {}".format(type(e).__name__, str(e)))
             raise
 
     def connect_set(self, selection, _):
+        """called when the user releases the connection switch"""
         switch = self.builder.get_object('connect-switch')
         state = switch.get_active()
         logger.info("switch activated, state {}".format(state))
@@ -553,18 +622,22 @@ class EduVpnApp:
         if treeiter is not None:
             uuid, display_name, _, _ = model[treeiter]
             if not state:
+                switch.set_active(True)
                 self.activate_connection(uuid, display_name)
             else:
-                notify("Disconnecting from {}".format(display_name))
+                notify("eduVPN disconnecting...", "Disconnecting from {}".format(display_name))
+                switch.set_active(False)
                 try:
                     disconnect_provider(uuid)
                 except Exception as e:
                     error_helper(self.window, "can't disconnect", "{}: {}".format(type(e).__name__, str(e)))
 
 
-def main(here):
+def main():
     GObject.threads_init()
+    dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     logging.basicConfig(level=logging.INFO)
-    eduVpnApp = EduVpnApp(here)
+    edu_vpn_app = EduVpnApp()
+    edu_vpn_app.run()
     Gtk.main()
 

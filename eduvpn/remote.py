@@ -6,6 +6,7 @@
 import logging
 import base64
 
+import dateutil.parser
 import requests
 
 from eduvpn.config import locale
@@ -60,7 +61,7 @@ def get_instances(discovery_uri, verify_key=None):
         inst_doc_sig = requests.get(discovery_sig_uri)
         if inst_doc_sig.status_code != 200:
             msg = "Can't retrieve signature, requesting {} gave error code {}".format(discovery_sig_uri,
-                                                                                    inst_doc_sig.status_code)
+                                                                                      inst_doc_sig.status_code)
             logger.warning(msg)
         else:
             logger.info("verifying signature of {}".format(discovery_uri))
@@ -85,7 +86,7 @@ def get_instances(discovery_uri, verify_key=None):
         else:
             logo_data = logo.content
 
-            instances.append((display_name, base_uri, logo_data))
+        instances.append((display_name, base_uri, logo_data))
 
     return authorization_type, instances
 
@@ -125,8 +126,7 @@ def create_keypair(oauth, api_base_uri):
         tuple(str, str): certificate and key
     """
     logger.info("Creating and retrieving key pair from {}".format(api_base_uri))
-    create_keypair = oauth.post(api_base_uri + '/create_keypair', data={'display_name': 'eduVPN for Linux'})
-    response = create_keypair
+    response = oauth.post(api_base_uri + '/create_keypair', data={'display_name': 'eduVPN for Linux'})
     if response.status_code == 401:
         raise EduvpnAuthException("request returned error 401")
     elif response.status_code != 200:
@@ -178,16 +178,20 @@ def user_info(oauth, api_base_uri):
         raise EduvpnAuthException("request returned error 401")
     elif response.status_code != 200:
         raise Exception("can't retrieve user info, error code {}".format(response.status_code))
-    return response.json()
+    data = response.json()['user_info']['data']
+    return data
 
 
 def user_messages(oauth, api_base_uri):
     """
-    Returns user messages
+    These are messages specific to the user. It can contain a message about the user being blocked, or other personal
+    messages from the VPN administrator.
 
     args:
         oauth (requests_oauthlib.OAuth2Session): oauth2 object
         api_base_uri (str): the instance base URI
+    returns:
+        list: a list of dicts with date_time, message, type keys
     """
     logger.info("Retrieving user messages from {}".format(api_base_uri))
     response = oauth.get(api_base_uri + '/user_messages')
@@ -195,10 +199,11 @@ def user_messages(oauth, api_base_uri):
         raise EduvpnAuthException("request returned error 401")
     elif response.status_code != 200:
         raise Exception("can't fetch user messages, error code {}".format(response.status_code))
-    user_messages = response.json()['user_messages']
-    data = user_messages['data']
-    ok = user_messages['ok']
-    return data
+    messages = response.json()['user_messages']
+    ok = messages['ok']
+    data = messages['data']
+    for d in data:
+        yield dateutil.parser.parse(d['date_time']), d['type'], d['message']
 
 
 def system_messages(oauth, api_base_uri):
@@ -216,9 +221,10 @@ def system_messages(oauth, api_base_uri):
     elif response.status_code != 200:
         raise Exception("can't fetch system messages, error code {}".format(response.status_code))
     messages = response.json()['system_messages']
-    data = messages['data']
     ok = messages['ok']
-    return data
+    data = messages['data']
+    for d in data:
+        yield dateutil.parser.parse(d['date_time']), d['type'], d['message']
 
 
 def create_config(oauth, api_base_uri, display_name, profile_id):

@@ -5,7 +5,7 @@
 
 from setuptools import setup, find_packages
 
-__version__ = "1.0rc2"
+__version__ = "1.0rc3"
 
 
 install_requires = [
@@ -14,10 +14,14 @@ install_requires = [
     'requests_oauthlib',
     'future',
     'configparser',
+    'python-dateutil',
+    'pygobject',
+    'six',
 ]
 
+# sometimes the python2 package is not properly registered, triggering a reinstall and compile
 extras_require = {
-    'client': ['python-networkmanager', 'pygobject'],
+    'dbus': ['dbus-python'],
 }
 
 scripts = [
