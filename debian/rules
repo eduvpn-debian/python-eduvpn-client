@@ -9,21 +9,21 @@ override_dh_auto_clean:
 	dh_auto_clean
 	rm -rf doc/_build .pybuild/ .eggs/ .cache
 
-override_dh_auto_build:
-	dh_auto_build
-	python -msphinx doc doc/_build
-
 override_dh_auto_test:
+	# TODO: enable test suite
+	# https://github.com/eduvpn/python-eduvpn-client/issues/61
+	#
 	true
 
 %:
-	dh $@ --with python2 --buildsystem=pybuild
+	dh $@ --with python2,python3,sphinxdoc --buildsystem=pybuild
 
 
-# If you need to rebuild the Sphinx documentation
-# Add spinxdoc to the dh --with line
-#override_dh_auto_build:
-#	dh_auto_build
-#	PYTHONPATH=. http_proxy='127.0.0.1:9' sphinx-build -N -bhtml        docs/ build/html # HTML generator
-#	PYTHONPATH=. http_proxy='127.0.0.1:9' sphinx-build -N -bman        docs/ build/man # Manpage generator
+override_dh_auto_build:
+	dh_auto_build
+	# TODO: enable doc generation
+	# https://github.com/eduvpn/python-eduvpn-client/issues/62
+	#
+	#PYTHONPATH=. http_proxy='127.0.0.1:9' sphinx-build -N -bhtml doc/ build/html # HTML generator
+	#PYTHONPATH=. http_proxy='127.0.0.1:9' sphinx-build -N -bman doc/ build/man # Manpage generator
 

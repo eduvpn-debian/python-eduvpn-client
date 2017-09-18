@@ -6,7 +6,6 @@ Build-Depends: debhelper (>= 9),
     dh-python,
     python-all,
     python-setuptools,
-    python-networkmanager,
     network-manager-openvpn-gnome,
     python-dbus,
     python-nacl,
@@ -16,38 +15,48 @@ Build-Depends: debhelper (>= 9),
     python-sphinx,
     python-pytest-runner,
     python-mock,
-    python-pytest
-#    python3-pytest
-#    python3-mock
-#    python3-pytest-runner
-#    python3-all,
-#    python3-setuptools,
-#    python3-networkmanager,
-#    python3-dbus,
-#    python3-nacl,
-#    python3-requests-oauthlib,
-#    python3-gi
+    python-pytest,
+    python3-pytest,
+    python3-mock,
+    python3-pytest-runner,
+    python3-all,
+    python3-setuptools,
+    python3-dbus,
+    python3-nacl,
+    python3-requests-oauthlib,
+    python3-gi
 Standards-Version: 3.9.8
 Homepage: https://github.com/gijzelaerr/python-eduvpn-client
 X-Python-Version: >= 2.6
-#X-Python3-Version: >= 3.2
+X-Python3-Version: >= 3.2
 Vcs-Git: https://github.com/eduvpn-debian/python-eduvpn-client
 Vcs-Browser: https://github.com/eduvpn-debian/python-eduvpn-client
 Testsuite: autopkgtest-pkg-python
 
 Package: python-eduvpn-client
 Architecture: all
-Depends: ${python:Depends}, ${misc:Depends}, python-gi, python-networkmanager, python-dbus, gir1.2-gtk-3.0, gir1.2-notify-0.7
+Depends: ${python:Depends},
+ ${misc:Depends},
+ python-gi,
+ python-dbus,
+ gir1.2-gtk-3.0,
+ gir1.2-notify-0.7
 Suggests: python-eduvpn-client-doc
 Description: eduVPN client (Python 2)
  This package installs the library for Python 2.
 
-#Package: python3-eduvpn-client
-#Architecture: all
-#Depends: ${python3:Depends}, ${misc:Depends}
-#Suggests: python-eduvpn-client-doc
-#Description: eduVPN client (Python 3)
-# This package installs the library for Python 3.
+Package: python3-eduvpn-client
+Architecture: all
+Depends:
+ ${python3:Depends},
+ ${misc:Depends}
+ python3-gi,
+ python3-dbus,
+ gir1.2-gtk-3.0,
+ gir1.2-notify-0.7
+Suggests: python-eduvpn-client-doc
+Description: eduVPN client (Python 3)
+ This package installs the library for Python 3.
 
 Package: python-eduvpn-client-doc
 Architecture: all
@@ -58,7 +67,11 @@ Description: eduVPN client (common documentation)
 
 Package: eduvpn-client
 Architecture: all
-Depends: python-eduvpn-client, network-manager-openvpn, network-manager-openvpn-gnome, openvpn
+Depends:
+ python-eduvpn-client,
+ network-manager-openvpn,
+ network-manager-openvpn-gnome,
+ openvpn
 Description: The eduVPN client
 
 
