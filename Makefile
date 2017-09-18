@@ -1,25 +1,26 @@
 
-.PHONY: deb fedora doc
+.PHONY: deb fedora doc test test3 run dockers
 
-# unfortunatly networkmanager doesn't have a python3 package
 deb:
-	sudo apt update
-	sudo apt install -y \
-		network-manager-openvpn-gnome \
-		python-networkmanager \
+	apt update
+	apt install -y \
+		gir1.2-gtk-3.0 \
+		gir1.2-notify-0.7 \
 		libnotify4 \
+		python-gi \
 		python-dbus \
 		python-nacl \
 		python-requests-oauthlib \
-		python-gi \
+		python-configparser \
+		python-future \
+		python-dateutil \
+		python-mock \
+		python-pytest \
+		python3-dateutil \
 		python3-dbus \
 		python3-nacl \
 		python3-requests-oauthlib \
-		python3-gi \
-		python3-dev \
-		libdbus-glib-1-dev
-
-
+		python3-gi 
 
 fedora:
 	sudo dnf install -y \
@@ -36,6 +37,8 @@ fedora:
 		python2-nose \
 		python2-mock \
 		python2-virtualenv \
+		python2-dateutil \
+		python3-dateutil \
 		python3-networkmanager \
 		python3-pydbus \
 		python3-pynacl \
@@ -51,32 +54,26 @@ fedora:
 	virtualenv --system-site-packages -p python2 .virtualenv
 
 .virtualenv/bin/eduvpn-client: .virtualenv/
-	.virtualenv/bin/pip install -e ".[ui,nm]"
+	.virtualenv/bin/pip install -e ".[dbus]"
 
 .virtualenv3/:
 	virtualenv --system-site-packages -p python3 .virtualenv3
 
 .virtualenv3/bin/eduvpn-client: .virtualenv3/
-	.virtualenv3/bin/pip install -e ".[ui]"
+	.virtualenv3/bin/pip install -e ".[dbus]"
 
 doc:  .virtualenv/
 	.virtualenv/bin/pip install -r doc/requirements.txt
 	.virtualenv/bin/python -msphinx doc doc/_build
 
-test: .virtualenv/
-	.virtualenv/bin/pip install -r tests/requirements.txt
-	.virtualenv/bin/nosetests
+test: .virtualenv/bin/eduvpn-client
+	.virtualenv/bin/python setup.py test
 
-test3: .virtualenv3/
-	.virtualenv3/bin/pip install -r tests/requirements.txt
-	.virtualenv3/bin/nosenosetests
+test3: .virtualenv3/bin/eduvpn-client
+	.virtualenv3/bin/python setup.py test
 
-run: .virtualenv/bin/eduvpn-client
-	.virtualenv/bin/eduvpn-client
+run: .virtualenv3/bin/eduvpn-client
+	.virtualenv3/bin/eduvpn-client
 
 dockers:
-	for i in `ls docker/Dockerfile*`; do docker build . -f $$i; done
-
-
-homebrew:
-	brew install pygobject pygobject3 libnotify
+	for i in `ls docker/Dockerfile*`; do echo "*** $$i"; docker build . -f $$i; done

@@ -1,19 +1,22 @@
-FROM ubuntu:xenial
+FROM ubuntu:zesty
 
 ADD docker/docker-apt-install /usr/local/bin/docker-apt-install
 RUN docker-apt-install \
-        python-networkmanager \
+        gir1.2-gtk-3.0 \
+        gir1.2-notify-0.7 \
+        libnotify4 \
+        python-gi \
         python-dbus \
         python-nacl \
         python-requests-oauthlib \
-        python-gi \
-	    python-pip \
         python-configparser \
         python-future \
-        python-nose \
-        python-mock
+        python-dateutil \
+        python-mock \
+        python-pytest
+
 
 ADD . /code
 WORKDIR /code
-RUN pip install .
-
+RUN python setup.py install
+RUN python setup.py test
