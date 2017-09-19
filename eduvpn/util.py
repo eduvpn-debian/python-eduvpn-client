@@ -8,12 +8,13 @@ import threading
 import uuid
 from os import path
 
+from repoze.lru import lru_cache
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('GdkPixbuf', '2.0')
-from gi.repository import Gtk, GdkPixbuf
-
+from gi.repository import Gtk, GdkPixbuf, GLib
 from eduvpn.config import icon_size
+
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +52,7 @@ def thread_helper(func):
     return thread
 
 
-def bytes2pixbuf(data, width=icon_size['width'], height=icon_size['height']):
+def bytes2pixbuf(data, width=icon_size['width'], height=icon_size['height'], display_name=None):
     """
     converts raw bytes into a GTK PixBug
 
@@ -66,11 +67,16 @@ def bytes2pixbuf(data, width=icon_size['width'], height=icon_size['height']):
     """
     l = GdkPixbuf.PixbufLoader()
     l.set_size(width, height)
-    l.write(data)
-    l.close()
-    return l.get_pixbuf()
+    try:
+        l.write(data)
+        l.close()
+    except GLib.Error as e:
+        logger.error("can't process icon for {}: {}".format(display_name, str(e)))
+    else:
+        return l.get_pixbuf()
 
 
+@lru_cache(maxsize=1)
 def get_prefix():
     """
     Returns the Python prefix where eduVPN is installed
@@ -86,6 +92,7 @@ def get_prefix():
     raise Exception("Can't find eduVPN installation")
 
 
+@lru_cache(maxsize=1)
 def have_dbus():
     try:
         import dbus
@@ -96,3 +103,11 @@ def have_dbus():
     else:
         dbus.close()
         return True
+
+
+@lru_cache(maxsize=1)
+def get_pixbuf():
+        logo = path.join(get_prefix(), 'share/eduvpn/eduvpn.png')
+        small = GdkPixbuf.Pixbuf.new_from_file_at_scale(logo, icon_size['width'], icon_size['height'], True)
+        big = GdkPixbuf.Pixbuf.new_from_file_at_scale(logo, icon_size['width']*2, icon_size['height']*2, True)
+        return small, big
