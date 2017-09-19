@@ -16,6 +16,7 @@ Build-Depends: debhelper (>= 9),
     python-pytest-runner,
     python-mock,
     python-pytest,
+    python-repoze.lru,
     python3-pytest,
     python3-mock,
     python3-pytest-runner,
@@ -24,7 +25,8 @@ Build-Depends: debhelper (>= 9),
     python3-dbus,
     python3-nacl,
     python3-requests-oauthlib,
-    python3-gi
+    python3-gi,
+    python3-repoze.lru
 Standards-Version: 3.9.8
 Homepage: https://github.com/gijzelaerr/python-eduvpn-client
 X-Python-Version: >= 2.6
