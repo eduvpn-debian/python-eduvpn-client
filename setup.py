@@ -5,7 +5,7 @@
 
 from setuptools import setup, find_packages
 
-__version__ = "1.0rc3"
+__version__ = "1.0rc4"
 
 
 install_requires = [
@@ -17,6 +17,7 @@ install_requires = [
     'python-dateutil',
     'pygobject',
     'six',
+    'repoze.lru',
 ]
 
 # sometimes the python2 package is not properly registered, triggering a reinstall and compile
