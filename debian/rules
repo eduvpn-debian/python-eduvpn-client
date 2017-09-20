@@ -21,9 +21,6 @@ override_dh_auto_test:
 
 override_dh_auto_build:
 	dh_auto_build
-	# TODO: enable doc generation
-	# https://github.com/eduvpn/python-eduvpn-client/issues/62
-	#
-	#PYTHONPATH=. http_proxy='127.0.0.1:9' sphinx-build -N -bhtml doc/ build/html # HTML generator
-	#PYTHONPATH=. http_proxy='127.0.0.1:9' sphinx-build -N -bman doc/ build/man # Manpage generator
+	PYTHONPATH=. http_proxy='127.0.0.1:9' sphinx-build -N -bhtml doc/ build/html # HTML generator
+	PYTHONPATH=. http_proxy='127.0.0.1:9' sphinx-build -N -bman doc/ build/man # Manpage generator
 
