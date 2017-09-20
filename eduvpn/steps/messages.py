@@ -13,11 +13,12 @@ from eduvpn.exceptions import EduvpnAuthException
 logger = logging.getLogger(__name__)
 
 
-def _background(meta, builder, verifier, window):
+def _background(meta, builder, verifier):
     label = builder.get_object('messages-label')
     try:
         oauth = oauth_from_token(meta.token, update_token, meta.uuid)
     except Exception as e:
+        window = builder.get_object('eduvpn-window')
         GLib.idle_add(lambda: error_helper(window, "Can't reconstruct OAuth2 session", (str(e))))
         print(meta)
         raise
@@ -29,7 +30,7 @@ def _background(meta, builder, verifier, window):
         messages_system = list(system_messages(oauth, meta.api_base_uri))
         info = user_info(oauth, meta.api_base_uri)
     except EduvpnAuthException:
-        GLib.idle_add(lambda: reauth(meta=meta, verifier=verifier, builder=builder, window=window))
+        GLib.idle_add(lambda: reauth(meta=meta, verifier=verifier, builder=builder))
     except Exception as e:
         GLib.idle_add(lambda: error_helper(window, "Can't fetch user messages", str(e)))
         raise
@@ -49,6 +50,6 @@ def _background(meta, builder, verifier, window):
         GLib.idle_add(lambda: label.set_markup(text))
 
 
-def fetch_messages(meta, builder, verifier, window):
+def fetch_messages(meta, builder, verifier):
     logger.info("fetching user and system messages from {} ({})".format(meta.display_name, meta.api_base_uri))
-    thread_helper(lambda: _background(meta=meta, builder=builder, verifier=verifier, window=window))
+    thread_helper(lambda: _background(meta=meta, builder=builder, verifier=verifier))

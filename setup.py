@@ -5,7 +5,7 @@
 
 from setuptools import setup, find_packages
 
-__version__ = "1.0rc5"
+__version__ = "1.0rc6"
 
 
 install_requires = [
@@ -15,14 +15,13 @@ install_requires = [
     'future',
     'configparser',
     'python-dateutil',
-    'pygobject',
     'six',
     'repoze.lru',
 ]
 
 # sometimes the python2 package is not properly registered, triggering a reinstall and compile
 extras_require = {
-    'dbus': ['dbus-python'],
+    'client': ['dbus-python', 'pygobject'],
 }
 
 scripts = [
@@ -64,7 +63,7 @@ setup(
     keywords="vpn openvpn networking security",
     url="https://github.com/eduvpn/python-eduvpn-client",
     classifiers=[
-        "Development Status :: 5 - Stable",
+        "Development Status :: 5 - Production/Stable",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: POSIX",
         "Programming Language :: Python",
