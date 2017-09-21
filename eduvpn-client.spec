@@ -2,7 +2,7 @@
 %global sum client for eduVPN
 
 Name:           eduvpn_client
-Version:        1.0rc6
+Version:        1.0rc7
 Release:        1%{?dist}
 Summary:        %{sum}
 
@@ -11,6 +11,8 @@ URL:            https://pypi.python.org/pypi/%{srcname}
 Source0:        https://files.pythonhosted.org/packages/source/e/%{srcname}/%{srcname}-%{version}.tar.gz
 BuildArch:      noarch
 BuildRequires: pytest
+BuildRequires: python2-pytest-runner
+BuildRequires: python3-pytest-runner
 BuildRequires: gtk3
 BuildRequires: libnotify
 BuildRequires: dbus-python
