@@ -43,7 +43,7 @@ Depends: ${python:Depends},
  python-dbus,
  gir1.2-gtk-3.0,
  gir1.2-notify-0.7
-Suggests: python-eduvpn-client-doc
+Suggests: eduvpn-client-doc
 Description: eduVPN client (Python 2)
  This package installs the library for Python 2.
 
@@ -56,11 +56,11 @@ Depends:
  python3-dbus,
  gir1.2-gtk-3.0,
  gir1.2-notify-0.7
-Suggests: python-eduvpn-client-doc
+Suggests: eduvpn-client-doc
 Description: eduVPN client (Python 3)
  This package installs the library for Python 3.
 
-Package: python-eduvpn-client-doc
+Package: eduvpn-client-doc
 Architecture: all
 Section: doc
 Depends: ${sphinxdoc:Depends}, ${misc:Depends}

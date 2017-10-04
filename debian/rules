@@ -9,11 +9,11 @@ override_dh_auto_clean:
 	dh_auto_clean
 	rm -rf doc/_build .pybuild/ .eggs/ .cache
 
-override_dh_auto_test:
+#override_dh_auto_test:
 	# TODO: enable test suite
 	# https://github.com/eduvpn/python-eduvpn-client/issues/61
 	#
-	true
+	#true
 
 %:
 	dh $@ --with python2,python3,sphinxdoc --buildsystem=pybuild
