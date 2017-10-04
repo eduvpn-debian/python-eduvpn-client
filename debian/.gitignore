@@ -8,4 +8,7 @@ python-eduvpn-client.postinst.debhelper
 python-eduvpn-client.prerm.debhelper
 python-eduvpn-client.substvars
 python-eduvpn-client/
-
+python3-eduvpn-client.postinst.debhelper
+python3-eduvpn-client.prerm.debhelper
+python3-eduvpn-client.substvars
+python3-eduvpn-client/
