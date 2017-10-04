@@ -1,3 +1,8 @@
+# python-eduvpn-client - The GNU/Linux eduVPN client and Python API
+#
+# Copyright: 2017, The Commons Conservancy eduVPN Programme
+# SPDX-License-Identifier: GPL-3.0+
+
 import logging
 from datetime import datetime
 
@@ -5,7 +10,7 @@ import gi
 from gi.repository import GLib
 from eduvpn.util import error_helper
 from eduvpn.oauth2 import oauth_from_token
-from eduvpn.manager import update_token, update_config_provider, update_keys_provider, connect_provider
+from eduvpn.manager import update_config_provider, update_keys_provider, connect_provider
 from eduvpn.remote import get_profile_config, create_keypair
 from eduvpn.notify import notify
 
@@ -18,15 +23,16 @@ def activate_connection(meta, builder):
     logger.info("Connecting to {}".format(meta.display_name))
     notify("eduVPN connecting...", "Connecting to '{}'".format(meta.display_name))
     try:
-        if not meta.token:
+        token = meta.get_token()
+        if not token:
             logger.error("metadata for {} doesn't contain oauth2 token".format(meta.uuid))
         else:
-            oauth = oauth_from_token(meta.token, update_token, meta.uuid)
+            oauth = oauth_from_token(meta=meta)
             config = get_profile_config(oauth, meta.api_base_uri, meta.profile_id)
             meta.config = config
             update_config_provider(meta)
 
-            if datetime.now() > datetime.fromtimestamp(meta.token['expires_at']):
+            if datetime.now() > datetime.fromtimestamp(token['expires_at']):
                 logger.info("key pair is expired")
                 cert, key = create_keypair(oauth, meta.api_base_uri)
                 update_keys_provider(meta.uuid, cert, key)

@@ -11,18 +11,18 @@ from eduvpn.oauth2 import create_oauth_session, get_oauth_token_code, get_open_p
 
 class TestCrypto(unittest.TestCase):
     def test_create_oauth_session(self):
-        create_oauth_session(port=1025)
+        create_oauth_session(port=1025, auto_refresh_url='test')
 
     @mock.patch('eduvpn.oauth2.one_request', side_effect=lambda x: {"code": "blabla"})
     @mock.patch('webbrowser.open')
-    def test_get_oauth_token_code(self, moch_open, moch_one_request):
+    def test_get_oauth_token_code(self, _, __):
         get_oauth_token_code(port=1025)
 
     def test_get_open_port(self):
         get_open_port()
 
     @mock.patch('http.server.HTTPServer.handle_request')
-    def test_one_request(self, mock_handle_request):
+    def test_one_request(self, _):
         # TODO: need to find a proper way to mock that path
         with self.assertRaises(AttributeError):
             one_request(1025)

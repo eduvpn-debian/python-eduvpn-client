@@ -1,3 +1,9 @@
+# python-eduvpn-client - The GNU/Linux eduVPN client and Python API
+#
+# Copyright: 2017, The Commons Conservancy eduVPN Programme
+# SPDX-License-Identifier: GPL-3.0+
+
+
 class MockSelection:
     def __init__(self, num_fields):
         self.model = [['test'] * num_fields]
@@ -36,7 +42,7 @@ class MockOAuth:
     def __init__(self, response=MochResponse()):
         self.response = response
 
-    def get(self, url):
+    def get(self, _):
         return self.response
 
     def authorization_url(self, auth_endpoint, code_challenge_method, code_challenge):
@@ -44,7 +50,7 @@ class MockOAuth:
         state = "mock state"
         return url, state
 
-    def post(self, url, data):
+    def post(self, uri, data):
         return MochResponse()
 
 

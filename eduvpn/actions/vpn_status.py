@@ -1,3 +1,8 @@
+# python-eduvpn-client - The GNU/Linux eduVPN client and Python API
+#
+# Copyright: 2017, The Commons Conservancy eduVPN Programme
+# SPDX-License-Identifier: GPL-3.0+
+
 import logging
 import gi
 gi.require_version('Gtk', '3.0')
@@ -14,10 +19,10 @@ def vpn_change(builder):
     switch = builder.get_object('connect-switch')
     ipv4_label = builder.get_object('ipv4-label')
     ipv6_label = builder.get_object('ipv6-label')
-    
+
     # get the currently selected uuid
     meta = metadata_of_selected(builder=builder)
-    
+
     selected_uuid_active = False
     for active in active_connections():
         try:

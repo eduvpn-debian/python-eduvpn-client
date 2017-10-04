@@ -7,7 +7,6 @@ import logging
 import threading
 import uuid
 from os import path
-
 from repoze.lru import lru_cache
 import gi
 gi.require_version('Gtk', '3.0')
@@ -66,15 +65,15 @@ def bytes2pixbuf(data, width=icon_size['width'], height=icon_size['height'], dis
         GtkPixbuf: a GTK Pixbuf
 
     """
-    l = GdkPixbuf.PixbufLoader()
-    l.set_size(width, height)
+    loader = GdkPixbuf.PixbufLoader()
+    loader.set_size(width, height)
     try:
-        l.write(data)
-        l.close()
+        loader.write(data)
+        loader.close()
     except GLib.Error as e:
         logger.error("can't process icon for {}: {}".format(display_name, str(e)))
     else:
-        return l.get_pixbuf()
+        return loader.get_pixbuf()
 
 
 @lru_cache(maxsize=1)
@@ -88,7 +87,7 @@ def get_prefix():
     local = path.dirname(path.dirname(path.abspath(__file__)))
     options = [local, '/usr/', '/usr/local']
     for option in options:
-        if path.isfile(path.join(option, 'share/eduvpn/eduvpn.ui')):
+        if path.isfile(path.join(option, 'share/eduvpn/builder/window.ui')):
             return option
     raise Exception("Can't find eduVPN installation")
 
@@ -110,7 +109,7 @@ def have_dbus():
 def get_pixbuf():
         logo = path.join(get_prefix(), 'share/eduvpn/eduvpn.png')
         small = GdkPixbuf.Pixbuf.new_from_file_at_scale(logo, icon_size['width'], icon_size['height'], True)
-        big = GdkPixbuf.Pixbuf.new_from_file_at_scale(logo, icon_size['width']*2, icon_size['height']*2, True)
+        big = GdkPixbuf.Pixbuf.new_from_file_at_scale(logo, icon_size['width'] * 2, icon_size['height'] * 2, True)
         return small, big
 
 
@@ -120,5 +119,5 @@ def metadata_of_selected(builder):
     if treeiter is None:
         return
     else:
-        uuid, _, _, _ = model[treeiter]
-        return Metadata.from_uuid(uuid)
+        uuid_, _, _, _ = model[treeiter]
+        return Metadata.from_uuid(uuid_)

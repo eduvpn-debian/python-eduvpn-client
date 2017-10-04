@@ -1,12 +1,14 @@
-import logging
+# python-eduvpn-client - The GNU/Linux eduVPN client and Python API
+#
+# Copyright: 2017, The Commons Conservancy eduVPN Programme
+# SPDX-License-Identifier: GPL-3.0+
 
+import logging
 import gi
 from gi.repository import GLib
 from eduvpn.util import error_helper, thread_helper
-
 from eduvpn.steps.reauth import reauth
 from eduvpn.oauth2 import oauth_from_token
-from eduvpn.manager import update_token
 from eduvpn.remote import user_messages, system_messages, user_info
 from eduvpn.exceptions import EduvpnAuthException
 
@@ -15,10 +17,10 @@ logger = logging.getLogger(__name__)
 
 def _background(meta, builder, verifier):
     label = builder.get_object('messages-label')
+    window = builder.get_object('eduvpn-window')
     try:
-        oauth = oauth_from_token(meta.token, update_token, meta.uuid)
+        oauth = oauth_from_token(meta=meta)
     except Exception as e:
-        window = builder.get_object('eduvpn-window')
         GLib.idle_add(lambda: error_helper(window, "Can't reconstruct OAuth2 session", (str(e))))
         print(meta)
         raise

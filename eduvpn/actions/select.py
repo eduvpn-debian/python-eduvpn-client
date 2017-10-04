@@ -1,3 +1,8 @@
+# python-eduvpn-client - The GNU/Linux eduVPN client and Python API
+#
+# Copyright: 2017, The Commons Conservancy eduVPN Programme
+# SPDX-License-Identifier: GPL-3.0+
+
 import logging
 import base64
 
@@ -36,7 +41,7 @@ def select_profile(builder, verifier):
         else:
             _, icon = get_pixbuf()
         profile_image.set_from_pixbuf(icon)
-        profile_label.set_text(meta['connection_type'])
+        profile_label.set_text(meta.connection_type)
         connected = is_provider_connected(uuid=meta.uuid)
         switch.set_state(bool(connected))
         if connected:
@@ -59,4 +64,6 @@ def select_profile(builder, verifier):
 
         if meta.token:
             fetch_messages(meta=meta, builder=builder, verifier=verifier)
+        else:
+            logger.warning("no token available so net fetching messages")
         return meta

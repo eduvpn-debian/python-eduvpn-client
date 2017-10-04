@@ -1,3 +1,8 @@
+# python-eduvpn-client - The GNU/Linux eduVPN client and Python API
+#
+# Copyright: 2017, The Commons Conservancy eduVPN Programme
+# SPDX-License-Identifier: GPL-3.0+
+
 import logging
 from eduvpn.metadata import Metadata
 from eduvpn.config import secure_internet_uri, institute_access_uri
@@ -24,12 +29,14 @@ def new_provider(builder, verifier):
     elif response == 1:
         logger.info("secure button pressed")
         meta.connection_type = 'Secure Internet'
-        fetch_instance_step(meta=meta, builder=builder, verifier=verifier, discovery_uri=secure_internet_uri)
+        meta.discovery_uri = secure_internet_uri
+        fetch_instance_step(meta=meta, builder=builder, verifier=verifier)
 
     elif response == 2:
         logger.info("institute button pressed")
         meta.connection_type = 'Institute Access'
-        fetch_instance_step(meta=meta, builder=builder, verifier=verifier, discovery_uri=institute_access_uri)
+        meta.discovery_uri = institute_access_uri
+        fetch_instance_step(meta=meta, builder=builder, verifier=verifier)
 
     elif response == 3:
         logger.info("custom button pressed")
