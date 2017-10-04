@@ -1,7 +1,10 @@
+# python-eduvpn-client - The GNU/Linux eduVPN client and Python API
+#
+# Copyright: 2017, The Commons Conservancy eduVPN Programme
+# SPDX-License-Identifier: GPL-3.0+
+
 import logging
-
 import gi
-
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GLib
 from eduvpn.manager import delete_provider
@@ -24,8 +27,8 @@ def delete_profile(builder):
 
     window = builder.get_object('eduvpn-window')
 
-    dialog = Gtk.MessageDialog(window, Gtk.DialogFlags.MODAL, Gtk.MessageType.QUESTION,
-                               Gtk.ButtonsType.YES_NO, "Are you sure you want to remove '{}'?".format(meta.display_name))
+    dialog = Gtk.MessageDialog(window, Gtk.DialogFlags.MODAL, Gtk.MessageType.QUESTION, Gtk.ButtonsType.YES_NO,
+                               "Are you sure you want to remove '{}'?".format(meta.display_name))
     dialog.format_secondary_text("This action can't be undone.")
     response = dialog.run()
     if response == Gtk.ResponseType.YES:

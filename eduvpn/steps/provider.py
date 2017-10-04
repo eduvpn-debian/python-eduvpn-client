@@ -1,3 +1,8 @@
+# python-eduvpn-client - The GNU/Linux eduVPN client and Python API
+#
+# Copyright: 2017, The Commons Conservancy eduVPN Programme
+# SPDX-License-Identifier: GPL-3.0+
+
 import base64
 import logging
 from eduvpn.manager import list_providers
@@ -27,4 +32,3 @@ def update_providers(builder):
     else:
         logger.info("showing introduction")
         introduction.show()
-

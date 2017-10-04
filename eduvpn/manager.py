@@ -13,7 +13,7 @@ if have_dbus():
     import eduvpn.other_nm as NetworkManager
     from dbus.exceptions import DBusException
 
-from eduvpn.config import config_path
+from eduvpn.config import providers_path
 from eduvpn.io import write_cert
 from eduvpn.openvpn import format_like_ovpn, parse_ovpn, ovpn_to_nm
 from eduvpn.util import make_unique_id
@@ -45,11 +45,17 @@ def list_providers():
     """
     if not have_dbus():
         # fall back to just listing the json files
-        for p in os.listdir(config_path):
-            try:
-                yield Metadata.from_uuid(p[:-5])
-            except IOError as e:
-                logger.error("cant open {}: {}".format(p, e))
+        try:
+            providers = [i for i in os.listdir(providers_path) if i.endswith('.json')]
+        except IOError as e:
+            logger.error("can't list configurations in {}".format(providers_path))
+            raise StopIteration
+        else:
+            for p in providers:
+                try:
+                    yield Metadata.from_uuid(p[:-5])
+                except IOError as e:
+                    logger.error("cant open {}: {}".format(p, e))
     else:
         all_ = NetworkManager.Settings.ListConnections()
         vpn_connections = [c.GetSettings()['connection'] for c in all_ if c.GetSettings()['connection']['type'] == 'vpn']
@@ -82,7 +88,7 @@ def delete_provider(uuid):
     args:
         uuid (str): the unique ID of the configuration
     """
-    metadata = os.path.join(config_path, uuid + '.json')
+    metadata = os.path.join(providers_path, uuid + '.json')
     logger.info("deleting metadata file {}".format(metadata))
     try:
         os.remove(metadata)
@@ -220,23 +226,6 @@ def update_keys_provider(uuid, cert, key):
     logger.info("updating key pare for uuid {}".format(uuid))
     write_cert(cert, 'cert', uuid)
     write_cert(key, 'key', uuid)
-
-
-def update_token(uuid, token):
-    """
-    Update the oauth token configuration. Typically called when the token is expired.
-
-    args:
-        uuid (str): Unique ID of the network manager connection
-        token (dict): a oauth configuration dict
-    """
-    logger.info("writing new token information for {}".format(uuid))
-    path = os.path.join(config_path, uuid + '.json')
-    with open(path, 'r') as f:
-        metadata = json.load(f)
-    metadata['token'] = token
-    with open(path, 'w') as f:
-        json.dump(metadata, f)
 
 
 def monitor_all_vpn(callback):
