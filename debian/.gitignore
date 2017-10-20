@@ -1,9 +1,9 @@
 debhelper-build-stamp
-eduvpn-client.substvars
-eduvpn-client/
 files
 *.substvars
 *.debhelper
+eduvpn-client/
 python-eduvpn-client/
 python3-eduvpn-client/
+eduvpn-client-data/
 eduvpn-client-doc/

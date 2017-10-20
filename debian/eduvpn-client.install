@@ -1,0 +1,2 @@
+scripts/eduvpn-client usr/bin/
+share/applications/eduvpn-client.desktop usr/share/applications/

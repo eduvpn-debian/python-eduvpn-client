@@ -35,10 +35,25 @@ Vcs-Git: https://github.com/eduvpn-debian/python-eduvpn-client
 Vcs-Browser: https://github.com/eduvpn-debian/python-eduvpn-client
 Testsuite: autopkgtest-pkg-python
 
+Package: eduvpn-client-data
+Architecture: all
+Depends:
+ ${misc:Depends}
+Description: VPN client for educational networks (data files)
+ EduVPN enables students, employees and researchers to connect securely and
+ encrypted to the Internet from any standard device. EduVPN integrates with
+ the institutional network so that internal ICT services can be made available
+ in a secure manner.
+ .
+ This package installs the data files shared between Python 2 and Python 3
+
+
 Package: python-eduvpn-client
 Architecture: all
-Depends: ${python:Depends},
+Depends:
+ ${python:Depends},
  ${misc:Depends},
+ eduvpn-client-data,
  python-gi,
  python-dbus,
  gir1.2-gtk-3.0,
@@ -57,6 +72,7 @@ Architecture: all
 Depends:
  ${python3:Depends},
  ${misc:Depends},
+ eduvpn-client-data,
  python3-gi,
  python3-dbus,
  gir1.2-gtk-3.0,
@@ -86,6 +102,7 @@ Package: eduvpn-client
 Architecture: all
 Depends:
  ${misc:Depends},
+ ${python:Depends},
  python-eduvpn-client,
  network-manager-openvpn,
  network-manager-openvpn-gnome,
