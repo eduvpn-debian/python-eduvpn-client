@@ -104,6 +104,7 @@ Depends:
  ${misc:Depends},
  ${python:Depends},
  python-eduvpn-client,
+ network-manager,
  network-manager-openvpn,
  network-manager-openvpn-gnome,
  openvpn
