@@ -1,3 +1,11 @@
+python-eduvpn-client (1.0rc12-1) UNRELEASED; urgency=medium
+
+  * new upstream release
+  * re-enable tests
+  * use python3 sphinx
+
+ -- KERN packaging <packaging@kernsuite.info>  Wed, 16 May 2018 17:13:55 +0200
+
 python-eduvpn-client (1.0rc11-2) stable; urgency=medium
 
   * move shared files to data package
