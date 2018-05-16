@@ -1,1 +1,4 @@
-doc/_build .pybuild/ .eggs/ .cache
+doc/_build/
+.pybuild/
+.eggs/
+.cache/
