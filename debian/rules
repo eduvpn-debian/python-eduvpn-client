@@ -12,11 +12,6 @@ override_dh_auto_install:
 	rm -rf debian/python-eduvpn-client/usr/bin/eduvpn-client
 	rm -rf debian/python-eduvpn-client/usr/share
 
-override_dh_auto_test:
-	# TODO: enable test suite
-	# https://github.com/eduvpn/python-eduvpn-client/issues/61
-	true
-
 %:
 	dh $@ --with python2,python3,sphinxdoc --buildsystem=pybuild
 
