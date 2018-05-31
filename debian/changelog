@@ -1,3 +1,14 @@
+python-eduvpn-client (1.0rc12-1) stable; urgency=medium
+
+  [ Gijs Molenaar ]
+  * add network manager dependency to final deb
+  * switch to py3 for sphinx
+  * properly clean
+  * update watch file
+  * New upstream version 1.0rc12
+
+ -- KERN packaging <packaging@kernsuite.info>  Thu, 31 May 2018 13:37:46 +0200
+
 python-eduvpn-client (1.0rc11-2) stable; urgency=medium
 
   * move shared files to data package
