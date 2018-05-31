@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0+
 
 import logging
+from eduvpn.exceptions import EduvpnException
 
 import re
 
@@ -43,7 +44,7 @@ def parse_ovpn(configtext):
             else:
                 yield (split[0], split[1:])
 
-    for tag in 'ca', 'tls-auth', 'cert', 'key':
+    for tag in 'ca', 'tls-auth', 'cert', 'key', 'tls-crypt':
         x = re.search('<{}>(.*)</{}>'.format(tag, tag), configtext, flags=re.S)
         if x:
             full_match = x.group(0)
@@ -85,25 +86,33 @@ def ovpn_to_nm(config, uuid, display_name, username=None):
                 'ipv6': {'method': 'auto'},
                 'vpn': {'data': {'auth': config.get('auth', 'SHA256'),
                                  'cipher': config.get('cipher', 'AES-256-CBC'),
-                                 'comp-lzo': config.get('comp-lzo', 'adaptive') or 'adaptive',
                                  'connection-type': config.get('connection-type', 'tls'),
                                  'dev': 'tun',
                                  'remote': ",".join(":".join(r) for r in config['remote']),
                                  'remote-cert-tls': 'server',
                                  'ta-dir': config.get('key-direction', '1'),
-                                 'tls-cipher': config.get('tls-cipher', 'TLS-ECDHE-RSA-WITH-AES-256-GCM-SHA384')},
+                                 # 'tls-cipher' is not supported on ubuntu 16.04
+                                 # 'tls-cipher': config.get('tls-cipher', 'TLS-ECDHE-RSA-WITH-AES-256-GCM-SHA384')
+                                 },
                         'service-type': 'org.freedesktop.NetworkManager.openvpn'}
                 }
 
+    if 'comp-lzo' in config:
+        # todo: adaptive is not supported Ubuntu 16.04
+        settings['vpn']['data']['comp-lzo'] = config['comp-lzo'] or ''
+
     # 2 factor auth enabled
     if 'auth-user-pass' in config:
-        assert username
+        if not username:
+            raise EduvpnException("You need to enroll for 2FA in the user portal "
+                                  "first before being able to connect to this profile.")
         logger.info("looks like 2 factor authentication is enabled, enabling this in NM config")
         settings['vpn']['data']['cert-pass-flags'] = '0'
         settings['vpn']['data']['connection-type'] = 'password-tls'
         settings['vpn']['data']['password-flags'] = '2'
         settings['vpn']['data']['username'] = username
     else:
-        assert not username
+        if username:
+            raise EduvpnException("You are enrolled for 2FA but this is not enabled for this profile.")
 
     return settings
