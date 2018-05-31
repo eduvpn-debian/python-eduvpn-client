@@ -2,5 +2,5 @@
 version=3
 
 opts=filenamemangle=s/.+\/v?(\d\S+)\.tar\.gz/python-eduvpn-client-$1\.tar\.gz/ \
-  https://github.com/gijzelaerr/python-eduvpn-client/tags .*/v?(\d\S+)\.tar\.gz
+  https://github.com/eduvpn/python-eduvpn-client/tags .*/v?(\d\S+)\.tar\.gz
 
