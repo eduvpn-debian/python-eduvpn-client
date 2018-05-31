@@ -1,4 +1,4 @@
-FROM ubuntu:zesty
+FROM ubuntu:xenial
 
 ADD docker/docker-apt-install /usr/local/bin/docker-apt-install
 RUN docker-apt-install \
@@ -14,7 +14,8 @@ RUN docker-apt-install \
         python-repoze.lru \
         python-dateutil \
         python-mock \
-        python-pytest
+        python-pytest \
+        python-setuptools
 
 
 ADD . /code
