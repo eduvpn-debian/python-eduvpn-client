@@ -12,6 +12,7 @@ from eduvpn.util import have_dbus
 if have_dbus():
     import eduvpn.other_nm as NetworkManager
     from dbus.exceptions import DBusException
+    import dbus
 
 from eduvpn.config import providers_path
 from eduvpn.io import write_cert
@@ -47,7 +48,7 @@ def list_providers():
         # fall back to just listing the json files
         try:
             providers = [i for i in os.listdir(providers_path) if i.endswith('.json')]
-        except IOError as e:
+        except (IOError, OSError) as e:
             logger.error("can't list configurations in {}".format(providers_path))
             raise StopIteration
         else:
@@ -72,10 +73,8 @@ def store_provider(meta):
     config_dict = parse_ovpn(ovpn_text)
     cert_path = write_cert(meta.cert, 'cert', meta.uuid)
     key_path = write_cert(meta.key, 'key', meta.uuid)
-    ca_path = write_cert(config_dict.pop('ca'), 'ca', meta.uuid)
-    ta_path = write_cert(config_dict.pop('tls-auth'), 'ta', meta.uuid)
-    nm_config = ovpn_to_nm(config_dict, uuid=meta.uuid, display_name=meta.display_name, username=meta.username)
-    nm_config['vpn']['data'].update({'cert': cert_path, 'key': key_path, 'ca': ca_path, 'ta': ta_path})
+    nm_config = ovpn_to_nm(config_dict, meta=meta, display_name=meta.display_name, username=meta.username)
+    nm_config['vpn']['data'].update({'cert': cert_path, 'key': key_path})
     insert_config(nm_config)
     meta.write()
     return meta.uuid
@@ -200,18 +199,14 @@ def update_config_provider(meta):
     """
     logger.info("updating config for {} ({})".format(meta.display_name, meta.uuid))
     config_dict = parse_ovpn(meta.config)
-    ca_path = write_cert(config_dict.pop('ca'), 'ca', meta.uuid)
-    ta_path = write_cert(config_dict.pop('tls-auth'), 'ta', meta.uuid)
+    nm_config = ovpn_to_nm(config_dict, meta=meta, display_name=meta.display_name, username=meta.username)
 
     if have_dbus():
-        nm_config = ovpn_to_nm(config_dict, uuid=meta.uuid, display_name=meta.display_name, username=meta.username)
-        old_conn = NetworkManager.Settings.GetConnectionByUuid(meta.uuid)
-        old_settings = old_conn.GetSettings()
+        connection = NetworkManager.Settings.GetConnectionByUuid(meta.uuid)
+        old_settings = connection.GetSettings()
         nm_config['vpn']['data'].update({'cert': old_settings['vpn']['data']['cert'],
-                                         'key': old_settings['vpn']['data']['key'],
-                                         'ca': ca_path, 'ta': ta_path})
-        old_conn.Delete()
-        insert_config(nm_config)
+                                         'key': old_settings['vpn']['data']['key']})
+        connection.Update(nm_config)
 
 
 def update_keys_provider(uuid, cert, key):
@@ -238,9 +233,9 @@ def monitor_all_vpn(callback):
     if not have_dbus():
         return []
 
-    for connection in NetworkManager.Settings.ListConnections():
-        if connection.GetSettings()['connection']['type'] == 'vpn':
-            connection.connect_to_signal('Updated', callback)
+    bus = dbus.SystemBus()
+    bus.add_signal_receiver(handler_function=callback, dbus_interface='org.freedesktop.NetworkManager.VPN.Connection',
+                            signal_name='VpnStateChanged')
 
 
 def monitor_vpn(uuid, callback):

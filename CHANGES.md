@@ -1,3 +1,39 @@
+1.0rc14
+=======
+
+* Dev servers were accidentally enabled for 1.0rc13
+
+1.0rc13
+=======
+
+ * 'distributed' does not work #124 
+ *  server-poll-timeout ignored #122
+ * key-direction ignored when importing profile #123 
+ * can't enable connection bug #110 
+ * key-direction only relevant for tls-auth, not tls-crypt bug #108 
+ * 2FA error makes no sense? bug #114 
+ * callback doesn't check state #72
+ * Ip addresses not shown with OS using netplan bug #99
+ * Add Ubuntu 18.04 to supported architectures in doc #98
+
+
+1.0rc12
+=======
+
+ * comp-lzo should not (always) be on bug #107 
+ * problems with lambdas handling exception in Python 3.6 #106 
+ * invalid refresh token / access token should trigger reauthorization 105 
+ * We support system wide install and virtualenv but not pip install in .local 104 
+ * python test suite fails during debian package build low priority 61
+ * API documentation on readthedocs partially broken #90
+ * username unknown while auth-user-pass is set bug #102 
+ * OAuth client ID enhancement#95 
+ * tls-crypt not supported bug #100 
+ * Manage script by entrypoint enhancement #101
+ * Ubuntu 16.04.3 LTS > 'property 'tls-cipher' invalid or not supported' #92
+ * Ubuntu 17.10 > no protocol specified #93 
+
+
 1.0rc9
 ======
 

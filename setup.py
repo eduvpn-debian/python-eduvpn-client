@@ -5,7 +5,7 @@
 
 from setuptools import setup, find_packages
 
-__version__ = "1.0rc11"
+__version__ = "1.0rc14"
 
 
 install_requires = [
@@ -13,20 +13,16 @@ install_requires = [
     'pynacl',
     'requests_oauthlib',
     'future',
-    'configparser',
     'python-dateutil',
     'six',
     'repoze.lru',
 ]
 
-# sometimes the python2 package is not properly registered, triggering a reinstall and compile
+# sometimes the dbus-python package is not properly registered, triggering a
+# reinstall and compile
 extras_require = {
     'client': ['dbus-python', 'pygobject'],
 }
-
-scripts = [
-    'scripts/eduvpn-client',
-]
 
 data_files = [
     ('share/applications', ['share/applications/eduvpn-client.desktop']),
@@ -59,7 +55,6 @@ setup(
     name="eduvpn_client",
     version=__version__,
     packages=find_packages(),
-    scripts=scripts,
     data_files=data_files,
     install_requires=install_requires,
     extras_require=extras_require,
@@ -87,5 +82,10 @@ setup(
         "Topic :: System :: Operating System Kernels :: Linux",
         "Topic :: System :: Networking",
         "Environment :: X11 Applications",
+        ],
+    entry_points={
+        'gui_scripts': [
+            'eduvpn-client = eduvpn.main:main',
         ]
+}
 )
