@@ -1,3 +1,11 @@
+python-eduvpn-client (1.0rc14-1) stable; urgency=medium
+
+  [ Gijs Molenaar ]
+  * update changelog
+  * New upstream version 1.0rc14
+
+ -- Gijs Molenaar (launchpad ppa build key) <gijs@pythonic.nl>  Thu, 05 Jul 2018 16:55:35 +0200
+
 python-eduvpn-client (1.0rc12-1) stable; urgency=medium
 
   [ Gijs Molenaar ]
@@ -7,7 +15,7 @@ python-eduvpn-client (1.0rc12-1) stable; urgency=medium
   * update watch file
   * New upstream version 1.0rc12
 
- -- KERN packaging <packaging@kernsuite.info>  Thu, 31 May 2018 13:37:46 +0200
+ -- Gijs Molenaar (launchpad ppa build key) <gijs@pythonic.nl>  Thu, 31 May 2018 13:37:46 +0200
 
 python-eduvpn-client (1.0rc11-2) stable; urgency=medium
 
