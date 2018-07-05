@@ -28,7 +28,8 @@ deb:
 		python3-dbus \
 		python3-nacl \
 		python3-requests-oauthlib \
-		python3-gi 
+		python3-gi \
+		network-manager-openvpn
 
 
 # install all required binary packages on a rpm based system
@@ -98,7 +99,7 @@ dockers:
 	for i in `ls docker/Dockerfile*`; do echo "*** $$i"; docker build . -f $$i; done
 
 srpm:
-	docker build -t srpm -f docker/Dockerfile.fedora_26_rpm .
+	docker build -t srpm -f docker/Dockerfile.fedora_28_rpm .
 	mkdir tmp || true
 	docker run -v `pwd`/tmp:/tmp:rw srpm sh -c "cp /root/rpmbuild/SRPMS/* /tmp"
 

@@ -23,6 +23,10 @@ def vpn_change(builder):
     # get the currently selected uuid
     meta = metadata_of_selected(builder=builder)
 
+    if not meta:
+        logger.info("VPN status changed but no profile selected")
+        return
+
     selected_uuid_active = False
     for active in active_connections():
         try:
@@ -55,5 +59,5 @@ def vpn_change(builder):
         notify("eduVPN Disconnected", "Disconnected from '{}'".format(meta.display_name))
         logger.info("setting switch OFF")
         switch.set_active(False)
-        GLib.idle_add(lambda: ipv4_label.set_text(""))
-        GLib.idle_add(lambda: ipv6_label.set_text(""))
+        GLib.idle_add(lambda: ipv4_label.set_text("-"))
+        GLib.idle_add(lambda: ipv6_label.set_text("-"))
