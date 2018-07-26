@@ -1,3 +1,11 @@
+python-eduvpn-client (1.0rc16-1) stable; urgency=medium
+
+  [ Gijs Molenaar ]
+  * add new dependencies
+  * New upstream version 1.0rc16
+
+ -- KERN packaging <packaging@kernsuite.info>  Thu, 26 Jul 2018 17:06:40 +0200
+
 python-eduvpn-client (1.0rc15-1) stable; urgency=medium
 
   [ Gijs Molenaar ]
