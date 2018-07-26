@@ -1,7 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.22.1 -->
 <interface>
   <requires lib="gtk+" version="3.18"/>
-    <object class="GtkDialog" id="profiles-dialog">
+  <object class="GtkListStore" id="profiles-model">
+    <columns>
+      <!-- column-name display_name -->
+      <column type="gchararray"/>
+      <!-- column-name profile_id -->
+      <column type="gchararray"/>
+      <!-- column-name two_factor -->
+      <column type="gboolean"/>
+      <!-- column-name two_factor_method -->
+      <column type="gchararray"/>
+    </columns>
+  </object>
+  <object class="GtkDialog" id="profiles-dialog">
     <property name="can_focus">False</property>
     <property name="border_width">8</property>
     <property name="title" translatable="yes">Profile selection</property>
@@ -9,7 +22,9 @@
     <property name="default_width">400</property>
     <property name="default_height">400</property>
     <property name="type_hint">dialog</property>
-    <property name="transient_for">eduvpn-window</property>
+    <child>
+      <placeholder/>
+    </child>
     <child internal-child="vbox">
       <object class="GtkBox">
         <property name="can_focus">False</property>

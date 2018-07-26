@@ -92,18 +92,17 @@ def ovpn_to_nm(config, meta, display_name, username=None):
                                  'dev': 'tun',
                                  'remote': ",".join(":".join(r) for r in config['remote']),
                                  'remote-cert-tls': 'server',
-                                 # 'tls-cipher' is not supported on ubuntu 16.04
+                                 # 'tls-cipher' is not supported on older nm (like ubuntu 16.04)
                                  # 'tls-cipher': config.get('tls-cipher', 'TLS-ECDHE-RSA-WITH-AES-256-GCM-SHA384')
                                  },
                         'service-type': 'org.freedesktop.NetworkManager.openvpn'}
                 }
 
     # issue #138, not supported by older network-manager-openvpn
-    #if 'server-poll-timeout' in config:
-    #    settings['vpn']['data']['connect-timeout'] = config['server-poll-timeout']
+    # if 'server-poll-timeout' in config:
+    #     settings['vpn']['data']['connect-timeout'] = config['server-poll-timeout']
 
     if 'comp-lzo' in config:
-        # todo: adaptive is not supported Ubuntu 16.04
         settings['vpn']['data']['comp-lzo'] = config['comp-lzo'] or 'adaptive'
 
     # 2 factor auth enabled
@@ -117,14 +116,14 @@ def ovpn_to_nm(config, meta, display_name, username=None):
         settings['vpn']['data']['password-flags'] = '2'
         settings['vpn']['data']['username'] = username
 
-    ca_path = write_cert(config.pop('ca'), 'ca', meta.uuid)
+    ca_path = write_cert(config.get('ca'), 'ca', meta.uuid)
     settings['vpn']['data']['ca'] = ca_path
 
     if 'tls-auth' in config:
-        settings['vpn']['data']['ta'] = write_cert(config.pop('tls-auth'), 'ta', meta.uuid)
+        settings['vpn']['data']['ta'] = write_cert(config.get('tls-auth'), 'ta', meta.uuid)
         settings['vpn']['data']['ta-dir'] = config.get('key-direction', '1')
     elif 'tls-crypt' in config:
-        settings['vpn']['data']['tls-crypt'] = write_cert(config.pop('tls-crypt'), 'tc', meta.uuid)
+        settings['vpn']['data']['tls-crypt'] = write_cert(config.get('tls-crypt'), 'tc', meta.uuid)
     else:
         logging.info("'tls-crypt' and 'tls-auth' not found in configuration returned by server")
 

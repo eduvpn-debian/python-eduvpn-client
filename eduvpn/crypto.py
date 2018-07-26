@@ -8,6 +8,24 @@ import hashlib
 import random
 import nacl.signing
 import nacl.encoding
+from cryptography.x509.oid import NameOID
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
+
+
+def common_name_from_cert(pem_data):
+    """
+    Extract common name from client certificate.
+
+    args:
+        pem_data (str): PEM encoded certificate
+
+    returns:
+        str: the common name of the client certificate.
+
+    """
+    cert = x509.load_pem_x509_certificate(pem_data, default_backend())
+    return cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value
 
 
 def gen_code_verifier(length=128):
@@ -21,6 +39,12 @@ def gen_code_verifier(length=128):
         str:
     """
     choices = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~'
+    r = random.SystemRandom()
+    return "".join(r.choice(choices) for _ in range(length))
+
+
+def gen_base32(length=20):
+    choices = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
     r = random.SystemRandom()
     return "".join(r.choice(choices) for _ in range(length))
 

@@ -5,26 +5,30 @@
 
 import logging
 import webbrowser
+from random import random
 import gi
 from gi.repository import GLib
 from eduvpn.util import error_helper, thread_helper
 from eduvpn.crypto import gen_code_verifier
 from eduvpn.oauth2 import get_open_port, create_oauth_session, get_oauth_token_code, oauth_from_token
 from eduvpn.remote import get_instance_info, get_auth_url
+from eduvpn.metadata import reuse_token_from_base_uri
 from eduvpn.steps.profile import fetch_profile_step
+
 
 logger = logging.getLogger(__name__)
 
 
-def browser_step(builder, meta, verifier):
+def browser_step(builder, meta, verifier, force_token_refresh=False):
     """The notorious browser step. if no token, starts webserver, wait for callback, show token dialog"""
     logger.info("opening token dialog")
     dialog = builder.get_object('token-dialog')
-    thread_helper(lambda: _phase1_background(meta=meta, dialog=dialog, verifier=verifier, builder=builder))
+    thread_helper(lambda: _phase1_background(meta=meta, dialog=dialog, verifier=verifier, builder=builder,
+                                             force_token_refresh=force_token_refresh))
     dialog.show_all()
 
 
-def _phase1_background(meta, dialog, verifier, builder):
+def _phase1_background(meta, dialog, verifier, builder, force_token_refresh):
     try:
         logger.info("starting token obtaining in background")
         r = get_instance_info(instance_uri=meta.instance_base_uri, verifier=verifier)
@@ -36,6 +40,13 @@ def _phase1_background(meta, dialog, verifier, builder):
         raise
 
     meta.refresh_token()
+
+    if not meta.token and not force_token_refresh:
+        # lets see if other profiles already have a token we can use
+        token = reuse_token_from_base_uri(meta.instance_base_uri)
+        if token:
+            meta.token = token
+
     if not meta.token:
         code_verifier = gen_code_verifier()
         port = get_open_port()
@@ -86,10 +97,12 @@ def _show_dialog(dialog, auth_url, builder):
 
 
 def _phase2_background(meta, port, oauth, code_verifier, auth_url, dialog, builder, state):
+    session = random()
+    logger.info("opening browser with url {}".format(auth_url))
     try:
-        logger.info("opening browser with url {}".format(auth_url))
         webbrowser.open(auth_url)
-        code, other_state = get_oauth_token_code(port)
+        dialog.session = session
+        code, other_state = get_oauth_token_code(port, timeout=120)
         logger.info("control returned by browser")
         if state != other_state:
             logger.error("received from state, expected: {}, received: {}".format(state, other_state))
@@ -98,8 +111,11 @@ def _phase2_background(meta, port, oauth, code_verifier, auth_url, dialog, build
         meta.token = oauth.fetch_token(meta.token_endpoint, code=code, code_verifier=code_verifier)
     except Exception as e:
         error = e
-        GLib.idle_add(lambda: error_helper(dialog, "Can't obtain token", "{}".format(str(error))))
-        GLib.idle_add(lambda: dialog.hide())
+        if dialog.get_property("visible") and dialog.session == session:
+            GLib.idle_add(lambda: error_helper(dialog, "Can't obtain token", "{}".format(str(error))))
+            GLib.idle_add(lambda: dialog.hide())
+        else:
+            logging.error(error)
         raise
     else:
         GLib.idle_add(lambda: _phase2_callback(meta=meta, oauth=oauth, dialog=dialog, builder=builder))

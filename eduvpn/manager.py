@@ -16,7 +16,7 @@ if have_dbus():
 
 from eduvpn.config import providers_path
 from eduvpn.io import write_cert
-from eduvpn.openvpn import format_like_ovpn, parse_ovpn, ovpn_to_nm
+from eduvpn.openvpn import parse_ovpn, ovpn_to_nm
 from eduvpn.util import make_unique_id
 from eduvpn.exceptions import EduvpnException
 from eduvpn.metadata import Metadata
@@ -65,17 +65,23 @@ def list_providers():
             yield Metadata.from_uuid(conn['uuid'], display_name=conn['id'])
 
 
-def store_provider(meta):
+def store_provider(meta, config_dict):
     """Store the eduVPN configuration"""
     logger.info("storing profile with name {} using NetworkManager".format(meta.display_name))
-    meta.uuid = make_unique_id()
-    ovpn_text = format_like_ovpn(meta.config, meta.cert, meta.key)
-    config_dict = parse_ovpn(ovpn_text)
+    new = False
+    if not meta.uuid:
+        meta.uuid = make_unique_id()
+        new = True
     cert_path = write_cert(meta.cert, 'cert', meta.uuid)
     key_path = write_cert(meta.key, 'key', meta.uuid)
     nm_config = ovpn_to_nm(config_dict, meta=meta, display_name=meta.display_name, username=meta.username)
     nm_config['vpn']['data'].update({'cert': cert_path, 'key': key_path})
-    insert_config(nm_config)
+
+    if new:
+        insert_config(nm_config)
+    else:
+        update_config_provider(meta, config_dict)
+
     meta.write()
     return meta.uuid
 
@@ -101,7 +107,8 @@ def delete_provider(uuid):
     all_connections = NetworkManager.Settings.ListConnections()
     conns = [c for c in all_connections if c.GetSettings()['connection']['uuid'] == uuid]
     if len(conns) != 1:
-        raise EduvpnException("{} connections matching uid {}".format(len(conns), uuid))
+        logger.error("{} connections matching uid {}".format(len(conns), uuid))
+        return
 
     conn = conns[0]
     logger.info("removing certificates for {}".format(uuid))
@@ -149,10 +156,27 @@ def list_active():
         list: a list of NetworkManager.ActiveConnection objects
     """
     logger.info("getting list of active connections")
-    if have_dbus():
-        return NetworkManager.NetworkManager.ActiveConnections
-    else:
+    if not have_dbus():
         return []
+
+    try:
+        active = NetworkManager.NetworkManager.ActiveConnections
+        return [a for a in active if NetworkManager.Settings.GetConnectionByUuid(a.Uuid).GetSettings()['connection']['type'] == 'vpn']
+    except DBusException:
+        return []
+
+
+def disconnect_all():
+    """
+    Disconnect all active VPN connections.
+    """
+    if not have_dbus():
+        return []
+
+    for active in NetworkManager.NetworkManager.ActiveConnections:
+        conn = NetworkManager.Settings.GetConnectionByUuid(active.Uuid)
+        if conn.GetSettings()['connection']['type'] == 'vpn':
+            disconnect_provider(active.Uuid)
 
 
 def disconnect_provider(uuid):
@@ -188,7 +212,7 @@ def is_provider_connected(uuid):
                 return "", ""
 
 
-def update_config_provider(meta):
+def update_config_provider(meta, config_dict):
     """
     Update an existing network manager configuration
 
@@ -198,7 +222,6 @@ def update_config_provider(meta):
         config (str): The new OpenVPN configuration
     """
     logger.info("updating config for {} ({})".format(meta.display_name, meta.uuid))
-    config_dict = parse_ovpn(meta.config)
     nm_config = ovpn_to_nm(config_dict, meta=meta, display_name=meta.display_name, username=meta.username)
 
     if have_dbus():
@@ -250,13 +273,3 @@ def monitor_vpn(uuid, callback):
 
     connection = NetworkManager.Settings.GetConnectionByUuid(uuid)
     connection.connect_to_signal('Updated', callback)
-
-
-def active_connections():
-    if not have_dbus():
-        return []
-
-    try:
-        return NetworkManager.NetworkManager.ActiveConnections
-    except DBusException:
-        return []
