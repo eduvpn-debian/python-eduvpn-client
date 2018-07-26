@@ -9,7 +9,6 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 from eduvpn.util import get_prefix
-from eduvpn.config import verify_key
 from eduvpn.crypto import make_verifier
 from eduvpn.manager import monitor_all_vpn
 from eduvpn.steps.provider import update_providers
@@ -24,6 +23,8 @@ logger = logging.getLogger(__name__)
 builder_files = (
     'window.ui',
     '2fa.ui',
+    'yubi_enroll.ui',
+    'totp_enroll.ui',
     'connection_type.ui',
     'custom_url.ui',
     'fetch.ui',
@@ -35,8 +36,11 @@ builder_files = (
 
 
 class EduVpnApp:
-    def __init__(self):
+    def __init__(self, secure_internet_uri, institute_access_uri, verify_key):
         """setup UI thingies, don't do any fetching or DBus communication yet"""
+
+        self.secure_internet_uri = secure_internet_uri
+        self.institute_access_uri = institute_access_uri
 
         # minimal global state to pass around data between steps where otherwise difficult
         self.selected_meta = None
@@ -70,12 +74,13 @@ class EduVpnApp:
         update_providers(self.builder)
 
     def add(self, _):
-        new_provider(builder=self.builder, verifier=self.verifier)
+        new_provider(builder=self.builder, verifier=self.verifier,
+                     secure_internet_uri=self.secure_internet_uri, institute_access_uri=self.institute_access_uri)
 
     def delete(self, _):
         delete_profile(builder=self.builder)
 
-    def select(self, _):
+    def select(self, *args):
         self.selected_meta = select_profile(builder=self.builder, verifier=self.verifier)
 
     def vpn_change(self, *args, **kwargs):
@@ -84,4 +89,4 @@ class EduVpnApp:
 
     def switched(self, selection, _):
         """called when the user releases the connection switch"""
-        switched(meta=self.selected_meta, builder=self.builder)
+        switched(meta=self.selected_meta, builder=self.builder, verifier=self.verifier)

@@ -28,7 +28,12 @@ class MockResponse:
             self.content_json = {
                 "create_keypair": {"data": {"certificate": "mockcert", "private_key": "mockkey"}},
                 "profile_list": {"data": {}},
-                "user_info": {'data': {'is_disabled': False, 'two_factor_enrolled': False}},
+                "user_info": {'data': {
+                    'is_disabled': False,
+                    'two_factor_enrolled': False,
+                    'two_factor_enrolled_with': ['totp'],
+                    'user_id': "bla",
+                }},
                 "authorization_type": "test",
                 "instances": [],
 
@@ -88,4 +93,7 @@ class MockDialog:
         return self.return_code
 
     def hide(self):
+        return True
+
+    def get_property(self, property):
         return True

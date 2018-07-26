@@ -2,11 +2,13 @@
 #
 # Copyright: 2017, The Commons Conservancy eduVPN Programme
 # SPDX-License-Identifier: GPL-3.0+
-
 import logging
 import threading
 import uuid
+import sys
 from os import path
+from future.standard_library import install_aliases
+install_aliases()
 from repoze.lru import lru_cache
 import gi
 gi.require_version('Gtk', '3.0')
@@ -52,6 +54,24 @@ def thread_helper(func):
     return thread
 
 
+def pil2pixbuf(img):
+    """
+    Convert a pillow (pil) object to a pixbuf
+
+    args:
+        img: (pil.Image): A pillow image
+
+    returns:
+        GtkPixbuf: a GTK Pixbuf
+    """
+    width, height = img.size
+    if img.mode != "RGB":  # gtk only supports RGB
+        img = img.convert(mode='RGB')
+    bytes = GLib.Bytes(img.tobytes())
+    pixbuf = GdkPixbuf.Pixbuf.new_from_bytes(bytes, GdkPixbuf.Colorspace.RGB, False, 8, width, height, width * 3)
+    return pixbuf
+
+
 def bytes2pixbuf(data, width=icon_size['width'], height=icon_size['height'], display_name=None):
     """
     converts raw bytes into a GTK PixBug
@@ -70,7 +90,7 @@ def bytes2pixbuf(data, width=icon_size['width'], height=icon_size['height'], dis
     try:
         loader.write(data)
         loader.close()
-    except GLib.Error as e:
+    except (GLib.Error, TypeError) as e:
         logger.error("can't process icon for {}: {}".format(display_name, str(e)))
     else:
         return loader.get_pixbuf()
@@ -84,10 +104,12 @@ def get_prefix():
     returns:
         str: path to Python installation prefix
     """
+    target = 'share/eduvpn/builder/window.ui'
     local = path.dirname(path.dirname(path.abspath(__file__)))
-    options = [local, path.expanduser('~/.local'), '/usr/local', '/usr/']
+    options = [local, path.expanduser('~/.local'), '/usr/local', sys.prefix]
     for option in options:
-        if path.isfile(path.join(option, 'share/eduvpn/builder/window.ui')):
+        logger.debug("looking for '{}' in '{}'".format(target, option))
+        if path.isfile(path.join(option, target)):
             return option
     raise Exception("Can't find eduVPN installation")
 

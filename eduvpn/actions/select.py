@@ -17,12 +17,11 @@ logger = logging.getLogger(__name__)
 
 def select_profile(builder, verifier):
     """called when a users selects a configuration"""
+    messages_label = builder.get_object('messages-label')
     notebook = builder.get_object('outer-notebook')
     switch = builder.get_object('connect-switch')
     ipv4_label = builder.get_object('ipv4-label')
-    ipv4_label_label = builder.get_object('ipv4-label-label')
     ipv6_label = builder.get_object('ipv6-label')
-    ipv6_label_label = builder.get_object('ipv6-label-label')
     twofa_label = builder.get_object('2fa-label')
     twofa_label_label = builder.get_object('2fa-label-label')
     name_label = builder.get_object('name-label')
@@ -56,7 +55,6 @@ def select_profile(builder, verifier):
             ipv4_label.set_text("-")
             ipv6_label.set_text("-")
 
-
         if meta.username:
             twofa_label.set_text(meta.username)
             twofa_label_label.set_text("2FA:")
@@ -67,8 +65,11 @@ def select_profile(builder, verifier):
         notebook.show_all()
         notebook.set_current_page(1)
 
+        messages_label.set_markup("")
         if meta.token:
             fetch_messages(meta=meta, builder=builder, verifier=verifier)
         else:
             logger.warning("no token available so not fetching messages")
+
+            messages_label.set_markup("<b><big>Warning</big></b>\nno token available so not fetching messages.")
         return meta

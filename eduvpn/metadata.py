@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0+
 
 import json
-from os import path
+import os
 import logging
 
 from eduvpn.config import others_path, providers_path
@@ -14,7 +14,7 @@ from eduvpn.exceptions import EduvpnException
 
 logger = logging.getLogger(__name__)
 
-distibuted_tokens_path = path.join(others_path, 'distributed.json')
+distibuted_tokens_path = os.path.join(others_path, 'distributed.json')
 
 
 def get_distributed_tokens():
@@ -35,6 +35,7 @@ class Metadata:
         self.token_endpoint = None
         self.authorization_type = None
         self.two_factor = None
+        self.two_factor_method = []
         self.cert = None
         self.key = None
         self.config = None
@@ -43,13 +44,14 @@ class Metadata:
         self.instance_base_uri = None
         self.username = None
         self.discovery_uri = None
+        self.user_id = None
         self.display_name = "Unknown"
         self.connection_type = "Unknown"
         self.profile_display_name = "Unknown"
 
     @staticmethod
     def from_uuid(uuid, display_name=None):
-        metadata_path = path.join(providers_path, uuid + '.json')
+        metadata_path = os.path.join(providers_path, uuid + '.json')
         metadata = Metadata()
         try:
             with open(metadata_path, 'r') as f:
@@ -69,10 +71,12 @@ class Metadata:
 
     def write(self):
         if not self.uuid:
-            raise EduvpnException('uuid field not set')
+            #raise EduvpnException('uuid field not set')
+            logger.warning("uuid field not yet set")
+            return
         fields = [f for f in dir(self) if not f.startswith('_') and not callable(getattr(self, f))]
         d = {field: getattr(self, field) for field in fields}
-        p = path.join(providers_path, self.uuid + '.json')
+        p = os.path.join(providers_path, self.uuid + '.json')
         logger.info("storing metadata in {}".format(p))
         serialized = json.dumps(d)
         mkdir_p(providers_path)
@@ -108,3 +112,17 @@ class Metadata:
                 logger.info("using distributed token from {}".format(self.discovery_uri))
                 self.token = tokens[self.discovery_uri]['token']
                 self.token_endpoint = tokens[self.discovery_uri]['token_endpoint']
+
+
+def get_all_metadata():
+    if not os.access(providers_path, os.X_OK):
+        return []
+    metadatas = [Metadata.from_uuid(i[:-5]) for i in os.listdir(providers_path) if i.endswith('.json')]
+    return metadatas
+
+
+def reuse_token_from_base_uri(instance_base_uri):
+    for metadata in get_all_metadata():
+        if metadata.connection_type in (u'Institute Access', u'Custom Instance') and \
+                metadata.instance_base_uri == instance_base_uri:
+            return metadata.token

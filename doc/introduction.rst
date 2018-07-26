@@ -8,14 +8,23 @@ of the API are usable on other platforms also. For the API Python 2.7, 3.4+ and 
 Installation
 ============
 
-It is recommended to use a package to install the eduVPN client. We currently support various Fedora, Debian and Ubuntu
-versions.
+It is recommended to use a package to install the eduVPN client, but you can also install using pip from py or directly
+from github. We distribute RPM packages for Fedora, and Deb packages for Debian and Ubuntu.
+
+.. note::
+
+    If you target is not supported the client might still work. You need to have
+    `Network Manager <https://wiki.gnome.org/Projects/NetworkManager>`_ and `OpenVPN 2.4.0+ <https://openvpn.net/>`_
+    installed.
+
 
 Debian and Ubuntu
 -----------------
 
 You can install the latest release on Debian or Ubuntu using the eduVPN packaging repository by running these commands
-as root or using sudo::
+as root or using sudo:
+
+.. code-block:: bash
 
     $ apt install apt-transport-https curl
     $ curl -L https://repo.eduvpn.org/debian/eduvpn.key | apt-key add -
@@ -29,7 +38,9 @@ supported. Ubuntu Xenial and older are bundled with an outdated and unsupporten 
 Fedora
 ------
 
-You can install the latest release of the eduVPN client on Fedora by running these commands as root or using sudo::
+You can install the latest release of the eduVPN client on Fedora by running these commands as root or using sudo:
+
+.. code-block:: bash
 
     $ dnf install dnf-plugins-core
     $ dnf copr enable gijzelaerr/eduvpn-client
@@ -41,32 +52,54 @@ More information is available at `fedora copr <https://copr.fedorainfracloud.org
 Pip
 ---
 
-You can install the client API from pypi::
+You can install the client API from pypi:
+
+.. code-block:: bash
 
     $ pip install python-eduvpn-client
 
 
-Or directly from a source checkout in the project root folder::
+Or if you want to try out the bleading edge development version:
 
+.. code-block:: bash
 
-    $ pip install -e .
+    $ pip install git+https://github.com/eduvpn/python-eduvpn-client.git
 
-You can install the dependencies for the user interface::
+You can install the dependencies for the user interface:
+
+.. code-block:: bash
 
     $ pip install -e ".[client]"
 
+.. note::
 
-Note that the project depends on the ``python-gi`` package, which for now doesn't properly install in a virtualenv.
-If you do install ``python-eduvpn-client`` in a virtualenv it is recommended you create the virtualenv using the
-``--system-site-packages`` flag and install the python-gi package using your operating system package manager. Read
-more about this on the `pygobject website <https://pygobject.readthedocs.io/>`_.
+    the project depends on the ``python-gi`` package, which for now doesn't properly install in a virtualenv.
+    If you do install ``python-eduvpn-client`` in a virtualenv it is recommended you create the virtualenv using the
+    ``--system-site-packages`` flag and install the python-gi package using your operating system package manager. Read
+    more about this on the `pygobject website <https://pygobject.readthedocs.io/>`_.
+
+If you use eduVPN this way you need to make sure all non-Python dependies are installed. For Debian or Ubuntu:
+
+.. code-block:: bash
+
+    $ apt install gir1.2-gtk-3.0 gir1.2-notify-0.7 libdbus-1-dev libnotify4 python3-dateutil \
+        python3-dbus python3-nacl python3-requests-oauthlib python3-gi network-manager-openvpn \
+        python3-pip git
+
+For fedora:
+
+.. code-block:: bash
+
+    $ dnf install -y gtk3 libnotify python3-dateutil python3-networkmanager python3-pydbus \
+        python3-pynacl python3-requests-oauthlib python3-gobject python3-pip \
+        python3-configparser python3-future git NetworkManager-openvpn NetworkManager-openvpn-gnome
 
 Issues
 ======
 
 If you experience any issues you could and should report them at our
 `issue tracker <https://github.com/eduvpn/python-eduvpn-client/issues>`_. Please don't forget to mention your OS,
-method of installation, eduVPN client version and problem reproduction instructions.
+method of installation, eduVPN client version and instructions on how to reproduce the problem.
 
 Source code
 -----------

@@ -27,7 +27,7 @@ def delete_profile(builder):
 
     window = builder.get_object('eduvpn-window')
 
-    dialog = Gtk.MessageDialog(window, Gtk.DialogFlags.MODAL, Gtk.MessageType.QUESTION, Gtk.ButtonsType.YES_NO,
+    dialog = Gtk.MessageDialog(window, Gtk.DialogFlags.MODAL, Gtk.MessageType.WARNING, Gtk.ButtonsType.YES_NO,
                                "Are you sure you want to remove '{}'?".format(meta.display_name))
     dialog.format_secondary_text("This action can't be undone.")
     response = dialog.run()
@@ -38,9 +38,9 @@ def delete_profile(builder):
             notify("eduVPN provider deleted", "Deleted '{}'".format(meta.display_name))
         except Exception as e:
             error_helper(window, "can't delete profile", str(e))
-            dialog.destroy()
+            dialog.hide()
             raise
         GLib.idle_add(lambda: update_providers(builder))
     elif response == Gtk.ResponseType.NO:
         logger.info("not deleting provider config")
-    dialog.destroy()
+    dialog.hide()

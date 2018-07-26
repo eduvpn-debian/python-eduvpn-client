@@ -5,7 +5,7 @@
 
 from setuptools import setup, find_packages
 
-__version__ = "1.0rc15"
+__version__ = "1.0rc16"
 
 
 install_requires = [
@@ -16,12 +16,16 @@ install_requires = [
     'python-dateutil',
     'six',
     'repoze.lru',
+    'qrcode',
+    'pillow',
+    'cryptography',
 ]
 
 # sometimes the dbus-python package is not properly registered, triggering a
 # reinstall and compile
 extras_require = {
     'client': ['dbus-python', 'pygobject'],
+    'test-online': ['mechanicalsoup', 'futures'],
 }
 
 data_files = [
@@ -34,7 +38,6 @@ data_files = [
         'share/eduvpn/internet_small.png',
     ]),
     ('share/eduvpn/builder', [
-        'share/eduvpn/builder/window.ui',
         'share/eduvpn/builder/2fa.ui',
         'share/eduvpn/builder/connection_type.ui',
         'share/eduvpn/builder/custom_url.ui',
@@ -43,6 +46,9 @@ data_files = [
         'share/eduvpn/builder/profiles.ui',
         'share/eduvpn/builder/redirecturl.ui',
         'share/eduvpn/builder/token.ui',
+        'share/eduvpn/builder/totp_enroll.ui',
+        'share/eduvpn/builder/window.ui',
+        'share/eduvpn/builder/yubi_enroll.ui',
     ]),
     ('share/icons/hicolor/48x48/apps', ['share/icons/hicolor/48x48/apps/eduvpn-client.png']),
     ('share/icons/hicolor/128x128/apps', ['share/icons/hicolor/128x128/apps/eduvpn-client.png']),
