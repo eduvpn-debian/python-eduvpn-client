@@ -42,6 +42,7 @@ Vcs-Browser: https://github.com/eduvpn-debian/python-eduvpn-client
 Testsuite: autopkgtest-pkg-python
 
 Package: eduvpn-client-data
+Conflicts: lets-connect-client-data
 Architecture: all
 Depends:
  ${misc:Depends}
@@ -55,6 +56,7 @@ Description: VPN client for educational networks (data files)
 
 
 Package: python-eduvpn-client
+Conflicts: python-lets-connect-client
 Architecture: all
 Depends:
  ${python:Depends},
@@ -74,6 +76,7 @@ Description: eduVPN client (Python 2)
  This package installs the library for Python 2.
 
 Package: python3-eduvpn-client
+Conflicts: python3-lets-connect-client
 Architecture: all
 Depends:
  ${python3:Depends},
@@ -93,6 +96,7 @@ Description: eduVPN client (Python 3)
  This package installs the library for Python 3.
 
 Package: eduvpn-client-doc
+Conflicts: lets-connect-client-doc
 Architecture: all
 Section: doc
 Depends: ${sphinxdoc:Depends}, ${misc:Depends}
@@ -105,6 +109,7 @@ Description: eduVPN client (common documentation)
  This is the common documentation package.
 
 Package: eduvpn-client
+Conflicts: lets-connect-client
 Architecture: all
 Depends:
  ${misc:Depends},
