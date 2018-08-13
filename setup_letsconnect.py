@@ -29,13 +29,22 @@ extras_require = {
 }
 
 data_files = [
-    ('share/applications', ['share/applications/eduvpn-client.desktop']),
+    ('share/applications', ['share/applications/lets-connect-client.desktop']),
     ('share/eduvpn', [
         'share/eduvpn/eduvpn.png',
         'share/eduvpn/institute.png',
         'share/eduvpn/institute_small.png',
         'share/eduvpn/internet.png',
         'share/eduvpn/internet_small.png',
+    ]),
+    ('share/letsconnect', [
+        'share/letsconnect/connected.png',
+        'share/letsconnect/connecting.png',
+        'share/letsconnect/disconnected.png',
+        'share/letsconnect/fallback.png',
+        'share/letsconnect/settings_full.png',
+        'share/letsconnect/settings.png',
+        'share/letsconnect/tray.png',
     ]),
     ('share/eduvpn/builder', [
         'share/eduvpn/builder/2fa.ui',
@@ -54,11 +63,15 @@ data_files = [
     ('share/icons/hicolor/128x128/apps', ['share/icons/hicolor/128x128/apps/eduvpn-client.png']),
     ('share/icons/hicolor/256x256/apps', ['share/icons/hicolor/256x256/apps/eduvpn-client.png']),
     ('share/icons/hicolor/512x512/apps', ['share/icons/hicolor/512x512/apps/eduvpn-client.png']),
+    ('share/icons/hicolor/48x48/apps', ['share/icons/hicolor/48x48/apps/lets-connect-client.png']),
+    ('share/icons/hicolor/128x128/apps', ['share/icons/hicolor/128x128/apps/lets-connect-client.png']),
+    ('share/icons/hicolor/256x256/apps', ['share/icons/hicolor/256x256/apps/lets-connect-client.png']),
+    ('share/icons/hicolor/512x512/apps', ['share/icons/hicolor/512x512/apps/lets-connect-client.png']),
 ]
 
 
 setup(
-    name="eduvpn_client",
+    name="lets_connect_client",
     version=__version__,
     packages=find_packages(),
     data_files=data_files,
@@ -66,7 +79,7 @@ setup(
     extras_require=extras_require,
     author="Gijs Molenaar",
     author_email="gijs@pythonic.nl",
-    description="eduVPN client",
+    description="Let's Connect! client",
     license="GPL3",
     setup_requires=['pytest-runner'],
     tests_require=['pytest', 'mock'],
@@ -91,7 +104,7 @@ setup(
         ],
     entry_points={
         'gui_scripts': [
-            'eduvpn-client = eduvpn.main:main_eduvpn',
+            'lets-connect-client = eduvpn.main:main_lets_connect',
         ]
 }
 )
