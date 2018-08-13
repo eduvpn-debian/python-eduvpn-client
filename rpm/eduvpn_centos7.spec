@@ -2,7 +2,7 @@
 %global sum client for eduVPN
 
 Name:           eduvpn_client
-Version:        1.0rc16
+Version:        1.0rc17
 Release:        1%{?dist}
 Summary:        %{sum}
 
@@ -11,12 +11,12 @@ URL:            https://pypi.python.org/pypi/%{srcname}
 Source0:        https://files.pythonhosted.org/packages/source/e/%{srcname}/%{srcname}-%{version}.tar.gz
 BuildArch:      noarch
 BuildRequires: pytest
-# BuildRequires: python2-pytest-runner   # - not included in centos7
+BuildRequires: python2-pytest-runner
 BuildRequires: gtk3
 BuildRequires: libnotify
 BuildRequires: dbus-python
 BuildRequires: python-gobject
-# BuildRequires: python-pynacl   # - not included in centos7
+BuildRequires: python2-pynacl
 BuildRequires: python-repoze-lru
 BuildRequires: python2-devel
 BuildRequires: python2-requests-oauthlib
@@ -27,10 +27,6 @@ BuildRequires: python-dateutil
 BuildRequires: python2-cryptography
 BuildRequires: python-qrcode
 BuildRequires: python-pillow
-BuildRequires: gcc
-# GCC is required for the test run that will compile and install pynacl manually
-
-
 
 %description
 An python module which provides a convenient example.
@@ -40,7 +36,7 @@ Summary:        %{sum}
 %{?python_provide:%python_provide python2-eduvpn-client}
 Requires: python-gobject
 Requires: dbus-python
-# Requires: python-pynacl  # - not included in centos7
+Requires: python2-pynacl
 Requires: python-repoze-lru
 Requires: python2-requests-oauthlib
 Requires: python2-configparser
@@ -49,6 +45,7 @@ Requires: python2-dateutil
 Requires: python2-cryptography
 Requires: python-qrcode
 Requires: python-pillow
+Conflicts: python2-lets-connect-client
 
 
 %description -n python2-eduvpn-client
@@ -59,6 +56,7 @@ Summary: %[sum}
 Requires: gtk3
 Requires: libnotify
 Requires:  python2-eduvpn-client
+Conflicts: lets-connect-client
 
 %description -n eduvpn-client
 eduVPN desktop client

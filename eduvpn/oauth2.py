@@ -9,18 +9,20 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import socket
 from future.moves.urllib.parse import urlparse, parse_qs
 from requests_oauthlib import OAuth2Session
-
+from eduvpn.brand import get_brand
 
 logger = logging.getLogger(__name__)
 
 landing_page = """
 <!doctype html>
 <html lang=en>
-<title>eduVPN - you can close this screen</title>
+<head>
+<meta charset=utf-8>
+<title>{brand} - bye</title>
 <style>
-.center {
+.center {{
     font-family: arial;
-    font-size: 50px;
+    font-size: 30px;
     position: absolute;
     text-align: center;
     width: 800px;
@@ -29,14 +31,15 @@ landing_page = """
     left: 50%;
     margin-left: -400px; /* margin is -0.5 * dimension */
     margin-top: -25px;
-}
+}}
 </style>
-<head>
-<meta charset=utf-8>
-<title>blah</title>
 </head>
 <body>
-<div class="center">You can now close this window</div>
+
+<div class="center">
+<img src="data:image/png;base64,{logo}" width="150">
+<p>You can now close this window.</p>
+</div>
 </body>
 </html>
 """
@@ -60,7 +63,7 @@ def get_open_port():
     return port
 
 
-def one_request(port, timeout=None):
+def one_request(port, lets_connect, timeout=None):
     """
     Listen for one http request on port, then close and return request query
 
@@ -76,7 +79,11 @@ def one_request(port, timeout=None):
             self.send_response(200)
             self.send_header("Content-type", "text/html")
             self.end_headers()
-            self.wfile.write(landing_page.encode('utf-8'))
+
+            logo, name = get_brand(lets_connect)
+            logo = stringify_image(logo)
+            content = landing_page.format(logo=logo, brand=name).encode('utf-8')
+            self.wfile.write(content)
             self.server.path = self.path
 
     httpd = HTTPServer(('', port), RequestHandler)
@@ -91,6 +98,11 @@ def one_request(port, timeout=None):
     parsed = urlparse(httpd.path)
     logger.info("received a request {}".format(httpd.path))
     return parse_qs(parsed.query)
+
+
+def stringify_image(logo):
+    import base64
+    return base64.b64encode(open(logo, 'rb').read()).decode('ascii')
 
 
 def create_oauth_session(port, auto_refresh_url):
@@ -108,7 +120,7 @@ def create_oauth_session(port, auto_refresh_url):
     return oauth
 
 
-def get_oauth_token_code(port, timeout=None):
+def get_oauth_token_code(port, lets_connect, timeout=None):
     """
     Start webserver, open browser, wait for callback response.
 
@@ -118,7 +130,7 @@ def get_oauth_token_code(port, timeout=None):
         str: the response code given by redirect
     """
     logger.info("waiting for callback on port {}".format(port))
-    response = one_request(port, timeout)
+    response = one_request(port, lets_connect, timeout)
     if 'code' in response and 'state' in response:
         code = response['code'][0]
         state = response['state'][0]
