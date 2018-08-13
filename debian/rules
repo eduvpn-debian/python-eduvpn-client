@@ -8,7 +8,8 @@ override_dh_auto_install:
 	dh_auto_install
 	rm -rf debian/python3-eduvpn-client/usr/bin/eduvpn-client
 	rm -rf debian/python3-eduvpn-client/usr/share
-	rm -rf debian/python-eduvpn-client/usr/bin/eduvpn-client
+	mkdir -p debian/eduvpn-client/usr/bin
+	mv debian/python-eduvpn-client/usr/bin/eduvpn-client debian/eduvpn-client/usr/bin
 	rm -rf debian/python-eduvpn-client/usr/share
 
 %:
