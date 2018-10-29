@@ -32,10 +32,11 @@ class Mock(MagicMock):
 
 MOCK_MODULES = ['pygtk', 'gtk', 'gobject', 'nacl', 'NetworkManager',
                 'dbus', 'nacl.encoding', 'nacl.signing', 'dbus.service',
-                'future', 'future.moves', 'future.moves.urllib',
-                'future.moves.urllib.parse', 'requests_oauthlib',
-                'http.server', 'gi', 'dateutil', 'gi.repository',
-                'dateutil.parser']  # 'http', 'http.server', 'http.client']
+                'cryptography', 'cryptography.x509', 'cryptography.x509.oid',
+                'cryptography', 'cryptography.hazmat',
+                'cryptography.hazmat.backends', 'OpenSSL.crypto',
+                'OpenSSL.SSL',]
+
 
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 

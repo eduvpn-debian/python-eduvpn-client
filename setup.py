@@ -5,7 +5,7 @@
 
 from setuptools import setup, find_packages
 
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 
 
 install_requires = [
@@ -26,6 +26,7 @@ install_requires = [
 extras_require = {
     'client': ['dbus-python', 'pygobject'],
     'test-online': ['mechanicalsoup', 'futures'],
+    'docs': ['sphinx', 'mock', 'sphinx_rtd_theme', 'future' ,'repoze.lru', 'six'],
 }
 
 data_files = [
