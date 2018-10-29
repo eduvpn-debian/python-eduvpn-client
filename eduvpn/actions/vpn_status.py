@@ -14,7 +14,7 @@ from eduvpn.util import metadata_of_selected
 logger = logging.getLogger(__name__)
 
 
-def vpn_change(builder, lets_connect):
+def vpn_change(builder, lets_connect, state=0, reason=0):
     logger.info("VPN status change")
     switch = builder.get_object('connect-switch')
     ipv4_label = builder.get_object('ipv4-label')
@@ -54,7 +54,7 @@ def vpn_change(builder, lets_connect):
                 break
         except Exception as e:
             logger.warning("probably race condition in network manager: {}".format(e))
-            pass
+            raise
 
     if not selected_uuid_active:
         logger.info("Our selected profile not active {}".format(meta.uuid))
