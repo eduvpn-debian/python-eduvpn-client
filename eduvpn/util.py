@@ -18,17 +18,17 @@ from gi.repository import Gtk, GdkPixbuf, GLib
 from eduvpn.config import icon_size
 from eduvpn.metadata import Metadata
 from eduvpn.exceptions import EduvpnException
-
+from typing import Any, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
 
-def make_unique_id():
+def make_unique_id():  # type: () -> str
     return str(uuid.uuid4())
 
 
 # ui thread
-def error_helper(parent, msg_big, msg_small):
+def error_helper(parent, msg_big, msg_small):  # type: (Gtk.GObject, str, str) -> None
     """
     Shows a GTK error message dialog.
 
@@ -37,14 +37,14 @@ def error_helper(parent, msg_big, msg_small):
         msg_big (str): the big string
         msg_small (str): the small string
     """
-    logger.error("{}: {}".format(msg_big, msg_small))
+    logger.error(u"{}: {}".format(msg_big, msg_small))
     error_dialog = Gtk.MessageDialog(parent, 0, Gtk.MessageType.ERROR, Gtk.ButtonsType.OK, str(msg_big))
     error_dialog.format_secondary_text(str(msg_small))
     error_dialog.run()
     error_dialog.hide()
 
 
-def thread_helper(func):
+def thread_helper(func):  # type: (Any) -> threading.Thread
     """
     Runs a function in a thread
 
@@ -57,7 +57,7 @@ def thread_helper(func):
     return thread
 
 
-def pil2pixbuf(img):
+def pil2pixbuf(img):  # type: (Any) -> GdkPixbuf.Pixbuf
     """
     Convert a pillow (pil) object to a pixbuf
 
@@ -75,7 +75,10 @@ def pil2pixbuf(img):
     return pixbuf
 
 
-def bytes2pixbuf(data, width=icon_size['width'], height=icon_size['height'], display_name=None):
+def bytes2pixbuf(data,
+                 width=icon_size['width'],
+                 height=icon_size['height'],
+                 display_name=None):  # type: (bytes, int, int, Optional[str]) -> GdkPixbuf.Pixbuf
     """
     converts raw bytes into a GTK PixBug
 
@@ -94,13 +97,13 @@ def bytes2pixbuf(data, width=icon_size['width'], height=icon_size['height'], dis
         loader.write(data)
         loader.close()
     except (GLib.Error, TypeError) as e:
-        logger.error("can't process icon for {}: {}".format(display_name, str(e)))
+        logger.error(u"can't process icon for {}: {}".format(display_name, str(e)))
     else:
         return loader.get_pixbuf()
 
 
 @lru_cache(maxsize=1)
-def get_prefix():
+def get_prefix():  # type: () -> str
     """
     Returns the Python prefix where eduVPN is installed
 
@@ -111,7 +114,7 @@ def get_prefix():
     local = path.dirname(path.dirname(path.abspath(__file__)))
     options = [local, path.expanduser('~/.local'), '/usr/local', sys.prefix]
     for option in options:
-        logger.debug("looking for '{}' in '{}'".format(target, option))
+        logger.debug(u"looking for '{}' in '{}'".format(target, option))
         if path.isfile(path.join(option, target)):
             return option
     raise Exception("Can't find eduVPN installation")
@@ -119,11 +122,12 @@ def get_prefix():
 
 @lru_cache(maxsize=1)
 def have_dbus():
+    # type: () -> bool
     try:
         import dbus
         dbus = dbus.SystemBus(private=True)
     except Exception as e:
-        logger.error("WARNING: dbus daemons not running, eduVPN client functionality limited")
+        logger.error(u"WARNING: dbus daemons not running, eduVPN client functionality limited")
         return False
     else:
         dbus.close()
@@ -132,6 +136,7 @@ def have_dbus():
 
 @lru_cache(maxsize=1)
 def get_pixbuf(logo=None):
+    # type: (Optional[str]) -> Tuple[GdkPixbuf.Pixbuf, GdkPixbuf.Pixbuf]
     if not logo:
         logo = path.join(get_prefix(), 'share/eduvpn/eduvpn.png')
 
@@ -141,6 +146,7 @@ def get_pixbuf(logo=None):
 
 
 def metadata_of_selected(builder):
+    # type: (Gtk.builder) -> Any
     selection = builder.get_object('provider-selection')
     model, treeiter = selection.get_selected()
     if treeiter is None:
@@ -151,6 +157,7 @@ def metadata_of_selected(builder):
 
 
 def detect_distro(release_file='/etc/os-release'):
+    # type: (str) -> Tuple[str, str]
     params = {}
     if not os.access(release_file, os.R_OK):
         raise EduvpnException("Can't detect distribution version, '/etc/os-release' doesn't exist.")
@@ -170,10 +177,11 @@ def detect_distro(release_file='/etc/os-release'):
 
 
 def are_we_running_ubuntu1804():
+    # type: () -> bool
     try:
         distro, version = detect_distro()
     except EduvpnException as e:
-        logger.error("can't determine distribution and version: {}".format(e))
+        logger.error(u"can't determine distribution and version: {}".format(e))
         return False
     else:
         if distro == 'ubuntu' and version == '18.04':

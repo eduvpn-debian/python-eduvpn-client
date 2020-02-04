@@ -101,7 +101,7 @@ notebook: .virtualenv3/bin/jupyter-notebook
 	.virtualenv3/bin/jupyter-notebook
 
 dockers:
-	for i in `ls docker/Dockerfile*`; do echo "*** $$i"; docker build . -f $$i; done
+	for i in `ls docker/*.docker`; do echo "*** $$i"; docker build . -f $$i; done
 
 srpm:
 	docker build -t eduvpn_fedora_rpm -f docker/eduvpn_fedora_28_rpm .
@@ -113,4 +113,7 @@ srpm:
 	docker run -v `pwd`/tmp:/tmp:rw lets_connect_fedora_rpm sh -c "cp /root/rpmbuild/SRPMS/* /tmp"
 	docker run -v `pwd`/tmp:/tmp:rw eduvpn_centos_rpm sh -c "cp /root/rpmbuild/SRPMS/* /tmp"
 	docker run -v `pwd`/tmp:/tmp:rw lets_connect_centos_rpm sh -c "cp /root/rpmbuild/SRPMS/* /tmp"
+
+mypy: .virtualenv3/
+	.virtualenv3/bin/mypy --ignore-missing-imports eduvpn tests
 
