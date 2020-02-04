@@ -114,7 +114,7 @@ Architecture: all
 Depends:
  ${misc:Depends},
  ${python:Depends},
- python-eduvpn-client,
+ python3-eduvpn-client,
  network-manager,
  network-manager-openvpn,
  network-manager-openvpn-gnome,
