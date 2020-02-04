@@ -2,7 +2,7 @@
 %global sum client for eduVPN
 
 Name:           lets_connect_client
-Version:        1.0.2
+Version:        1.0.3
 Release:        1%{?dist}
 Summary:        %{sum}
 
@@ -10,25 +10,13 @@ License:        MIT
 URL:            https://pypi.python.org/pypi/%{srcname}
 Source0:        https://files.pythonhosted.org/packages/source/e/%{srcname}/%{srcname}-%{version}.tar.gz
 BuildArch:      noarch
-BuildRequires: pytest
-BuildRequires: python2-pytest-runner
-BuildRequires: python3-pytest-runner
 BuildRequires: gtk3
 BuildRequires: libnotify
-BuildRequires: dbus-python
-BuildRequires: python-gobject
-BuildRequires: python2-devel
-BuildRequires: python2-pynacl
-BuildRequires: python2-requests-oauthlib
-BuildRequires: python2-configparser
-BuildRequires: python2-future
-BuildRequires: python2-mock
-BuildRequires: python2-cryptography
-BuildRequires: (python2-qrcode or python-qrcode)
-BuildRequires: python2-pillow
-BuildRequires: python-repoze-lru
+BuildRequires: python3-configparser
+BuildRequires: python3-pytest
+BuildRequires: python3-pytest-runner
+BuildRequires: python3-qrcode
 BuildRequires: python3-devel
-BuildRequires: python2-dateutil
 BuildRequires: python3-dbus
 BuildRequires: python3-pynacl
 BuildRequires: python3-requests-oauthlib
@@ -45,25 +33,6 @@ BuildRequires: python3-pillow
 %description
 An python module which provides a convenient example.
 
-%package -n python2-lets-connect-client
-Summary:        %{sum}
-%{?python_provide:%python_provide python2-lets-connect-client}
-Requires: python-gobject
-Requires: dbus-python
-Requires: python2-pynacl
-Requires: python2-requests-oauthlib
-Requires: python2-configparser
-Requires: python2-future
-Requires: python2-dateutil
-Requires: python-repoze-lru
-Requires: python2-cryptography
-Requires: (python2-qrcode or python-qrcode)
-Requires: python2-pillow
-Conflicts: python2-eduvpn-client 
-
-%description -n python2-lets-connect-client
-Let's Connect! client API for Python2
-
 
 %package -n python3-lets-connect-client
 Summary:        %{sum}
@@ -78,7 +47,7 @@ Requires: python3-repoze-lru
 Requires: python3-cryptography
 Requires: python3-qrcode
 Requires: python3-pillow
-Conflicts: python2-eduvpn-client 
+Conflicts: python3-eduvpn-client
 
 %description -n python3-lets-connect-client
 Let's Connect! client API for Python3
@@ -88,7 +57,7 @@ Summary: %[sum}
 Requires: gtk3
 Requires: libnotify
 Requires:  python3-lets-connect-client
-Conflicts: python2-eduvpn-client 
+Conflicts: python3-eduvpn-client
 
 %description -n lets-connect-client
 Let's Connect! desktop client
@@ -97,23 +66,16 @@ Let's Connect! desktop client
 %autosetup -n %{srcname}-%{version}
 
 %build
-%{__python2} setup_letsconnect.py build
 %{__python3} setup_letsconnect.py build
 
 
 %install
-%{__python2} setup_letsconnect.py install --root $RPM_BUILD_ROOT
 %{__python3} setup_letsconnect.py install --root $RPM_BUILD_ROOT
 
 
 %check
-%{__python2} setup_letsconnect.py test
 %{__python3} setup_letsconnect.py test
 
-%files -n python2-lets-connect-client
-%license LICENSE
-%doc README.md
-%{python2_sitelib}/*
 
 %files -n python3-lets-connect-client
 %license LICENSE
