@@ -4,20 +4,7 @@ Priority: optional
 Maintainer: Gijs Molenaar (launchpad ppa build key) <gijs@pythonic.nl>
 Build-Depends: debhelper (>= 9),
     dh-python,
-    python-all,
-    python-setuptools,
     network-manager-openvpn-gnome,
-    python-dbus,
-    python-nacl,
-    python-requests-oauthlib,
-    python-gi,
-    python-pytest-runner,
-    python-mock,
-    python-pytest,
-    python-repoze.lru,
-    python-qrcode,
-    python-pillow,
-    python-cryptography,
     python3-pytest,
     python3-mock,
     python3-pytest-runner,
@@ -30,9 +17,9 @@ Build-Depends: debhelper (>= 9),
     python3-repoze.lru,
     python3-sphinx-rtd-theme,
     python3-sphinx,
-    python-qrcode,
-    python-pillow,
-    python-cryptography
+    python3-qrcode,
+    python3-pillow,
+    python3-cryptography
 Standards-Version: 3.9.8
 Homepage: https://github.com/gijzelaerr/python-eduvpn-client
 X-Python-Version: >= 2.6
@@ -54,26 +41,6 @@ Description: VPN client for educational networks (data files)
  .
  This package installs the data files shared between Python 2 and Python 3
 
-
-Package: python-eduvpn-client
-Conflicts: python-lets-connect-client
-Architecture: all
-Depends:
- ${python:Depends},
- ${misc:Depends},
- eduvpn-client-data,
- python-gi,
- python-dbus,
- gir1.2-gtk-3.0,
- gir1.2-notify-0.7
-Suggests: eduvpn-client-doc
-Description: eduVPN client (Python 2)
- EduVPN enables students, employees and researchers to connect securely and
- encrypted to the Internet from any standard device. EduVPN integrates with
- the institutional network so that internal ICT services can be made available
- in a secure manner.
- .
- This package installs the library for Python 2.
 
 Package: python3-eduvpn-client
 Conflicts: python3-lets-connect-client
