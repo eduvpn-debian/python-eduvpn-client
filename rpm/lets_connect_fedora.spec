@@ -2,7 +2,7 @@
 %global sum client for eduVPN
 
 Name:           lets_connect_client
-Version:        1.0.3
+Version:        1.1
 Release:        1%{?dist}
 Summary:        %{sum}
 
@@ -12,7 +12,6 @@ Source0:        https://files.pythonhosted.org/packages/source/e/%{srcname}/%{sr
 BuildArch:      noarch
 BuildRequires: gtk3
 BuildRequires: libnotify
-BuildRequires: python3-configparser
 BuildRequires: python3-pytest
 BuildRequires: python3-pytest-runner
 BuildRequires: python3-qrcode
@@ -23,8 +22,6 @@ BuildRequires: python3-requests-oauthlib
 BuildRequires: python3-gobject
 BuildRequires: python3-future
 BuildRequires: python3-dateutil
-BuildRequires: python3-repoze-lru
-BuildRequires: python3-mock
 BuildRequires: python3-cryptography
 BuildRequires: python3-qrcode
 BuildRequires: python3-pillow
@@ -43,7 +40,6 @@ Requires: python3-requests-oauthlib
 Requires: python3-gobject
 Requires: python3-future
 Requires: python3-dateutil
-Requires: python3-repoze-lru
 Requires: python3-cryptography
 Requires: python3-qrcode
 Requires: python3-pillow

@@ -2,7 +2,7 @@
 %global sum client for Let's Connect!
 
 Name:           lets_connect_client
-Version:        1.0.3
+Version:        1.1
 Release:        1%{?dist}
 Summary:        %{sum}
 
@@ -22,9 +22,6 @@ BuildRequires: python3-dateutil
 BuildRequires: python3-cryptography
 BuildRequires: python3-qrcode
 BuildRequires: python3-pillow
-# BuildRequires: python3-mock
-# BuildRequires: python3-configparser
-# BuildRequires: python3-repoze-lru
 
 %description
 An python module which provides a convenient example.
@@ -42,8 +39,6 @@ Requires: python3-cryptography
 Requires: python3-qrcode
 Requires: python3-pillow
 Conflicts: python3-lets-connect-client
-# Requires: python3-configparser
-# Requires: python3-repoze-lru
 
 
 %description -n python3-lets-connect-client
