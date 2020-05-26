@@ -76,7 +76,6 @@ Description: eduVPN client (common documentation)
  This is the common documentation package.
 
 Package: eduvpn-client
-Conflicts: lets-connect-client
 Architecture: all
 Depends:
  ${misc:Depends},
@@ -92,4 +91,19 @@ Description: VPN client for educational networks
  the institutional network so that internal ICT services can be made available
  in a secure manner.
 
+Package: lets-connect-client
+Architecture: all
+Depends:
+ ${misc:Depends},
+ ${python:Depends},
+ python3-eduvpn-client,
+ network-manager,
+ network-manager-openvpn,
+ network-manager-openvpn-gnome,
+ openvpn
+Description: VPN client for educational networks
+ EduVPN enables students, employees and researchers to connect securely and
+ encrypted to the Internet from any standard device. EduVPN integrates with
+ the institutional network so that internal ICT services can be made available
+ in a secure manner.
 
