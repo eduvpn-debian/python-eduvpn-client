@@ -1,0 +1,20 @@
+[
+  "tests/test_crypto.py::TestCrypto::test_common_name_from_cert",
+  "tests/test_crypto.py::TestCrypto::test_gen_code_challenge",
+  "tests/test_crypto.py::TestCrypto::test_gen_code_verifier",
+  "tests/test_crypto.py::TestCrypto::test_make_verifier",
+  "tests/test_i18n.py::TestI18n::test_extract_translation",
+  "tests/test_main.py::TestMain::test_letsconnect",
+  "tests/test_main.py::TestMain::test_main",
+  "tests/test_main.py::TestMain::test_parse_args",
+  "tests/test_menu.py::TestMenu::test_input_int",
+  "tests/test_menu.py::TestMenu::test_menu",
+  "tests/test_menu.py::TestMenu::test_profile_choice",
+  "tests/test_menu.py::TestMenu::test_provider_choice",
+  "tests/test_menu.py::TestMenu::test_search",
+  "tests/test_menu.py::TestMenu::test_write_to_nm_choice",
+  "tests/test_oauth.py::TestOauth::test_get_oauth",
+  "tests/test_oauth.py::TestOauth::test_get_open_port",
+  "tests/test_oauth.py::TestOauth::test_one_request",
+  "tests/test_oauth.py::TestOauth::test_stringify_image"
+]
