@@ -1,5 +1,6 @@
 import logging
-from typing import Tuple
+from typing import Tuple, List, Dict, Any
+import json
 
 import requests
 from requests_oauthlib import OAuth2Session
@@ -8,6 +9,11 @@ from eduvpn.crypto import common_name_from_cert
 from eduvpn.crypto import validate
 
 logger = logging.getLogger(__name__)
+
+
+class InvalidProfile(Exception):
+    def __init__(self, message):
+        self.message = message
 
 
 def request(uri: str, verify: bool = False) -> dict:
@@ -54,7 +60,7 @@ def oauth_request(oauth: OAuth2Session, uri: str, method: str = 'get'):
     return response
 
 
-def list_orgs(uri: str):
+def list_organisations(uri: str) -> List[Dict[str, Any]]:
     try:
         result = request(uri, verify=True)['organization_list']
     except Exception as e:
@@ -63,7 +69,7 @@ def list_orgs(uri: str):
     return result
 
 
-def list_servers(uri: str):
+def list_servers(uri: str) -> List[Dict[str, Any]]:
     try:
         result = request(uri, verify=True)['server_list']
     except Exception as e:
@@ -72,9 +78,13 @@ def list_servers(uri: str):
     return result
 
 
-def get_info(base_uri: str):
+def get_full_info(base_uri: str) -> Dict[str, Any]:
     uri = base_uri + 'info.json'
-    info = request(uri)['api']['http://eduvpn.org/api#2']
+    return request(uri)['api']['http://eduvpn.org/api#2']
+
+
+def get_info(base_uri: str):
+    info = get_full_info(base_uri)
     api_base_uri = info['api_base_uri']
     token_endpoint = info['token_endpoint']
     auth_endpoint = info['authorization_endpoint']
@@ -83,7 +93,19 @@ def get_info(base_uri: str):
 
 def get_config(oauth: OAuth2Session, base_uri: str, profile_id: str) -> str:
     uri = base_uri + f'/profile_config?profile_id={profile_id}'
-    return oauth_request(oauth, uri).text
+    text = oauth_request(oauth, uri).text
+    try:
+        data = json.loads(text)
+    except json.decoder.JSONDecodeError:
+        # On success, the response it *not* JSON but a valid ovpn file.
+        pass
+    else:
+        # On errors, the server responds with JSON.
+        if not data['profile_config']['ok']:
+            logging.error(f"invalid profile_id: {profile_id} @ {base_uri}: {data}")
+            raise InvalidProfile(data['profile_config']['error'])
+        raise ValueError(data)
+    return text
 
 
 def list_profiles(oauth: OAuth2Session, api_base_uri: str):

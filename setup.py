@@ -1,15 +1,10 @@
 import os
+from glob import glob
 
 from setuptools import setup, find_packages
 
-__version__ = "1.9.1"
+__version__ = "2.0.0"
 
-tests_require = [
-    'pytest',
-    'PyGObject-stubs',
-    'mypy',
-    'pycodestyle',
-]
 
 install_requires = [
     'requests',
@@ -19,14 +14,30 @@ install_requires = [
     'wheel',
 ]
 
+tests_require = [
+    'pytest',
+    'pycodestyle',
+]
+
+mypy_require = [
+    'mypy',
+    'PyGObject-stubs',
+]
+
+gui_require = [
+    'dbus-python',
+    'pygobject',
+]
+
 extras_require = {
-    'gui': ['dbus-python','pygobject'],
+    'gui': gui_require,
     'test': tests_require,
+    'mypy': mypy_require,
 }
 
 
-def extra_files_line(dir: str):
-    return (dir, [os.path.join(dir, i) for i in os.listdir(dir) if os.path.isfile(os.path.join(dir, i))])
+def extra_files_line(dir_: str):
+    return dir_, [os.path.join(dir_, i) for i in os.listdir(dir_) if os.path.isfile(os.path.join(dir_, i))]
 
 
 data_files = [
@@ -41,6 +52,8 @@ data_files = [
     extra_files_line('share/icons/hicolor/256x256/apps'),
     extra_files_line('share/icons/hicolor/512x512/apps'),
 ]
+for dir in glob('share/locale/*/LC_MESSAGES'):
+    data_files.append([dir, glob(os.path.join(dir,'*.mo'))])
 
 setup(
     name="eduvpn_client",
@@ -76,11 +89,11 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'eduvpn-cli = eduvpn.__main__:eduvpn',
-            'letsconnect-cli = eduvpn.__main__:letsconnect',
+            'eduvpn-cli = eduvpn.cli:eduvpn',
+            'letsconnect-cli = eduvpn.cli:letsconnect',
         ],
         'gui_scripts': [
-            'eduvpn-gui = eduvpn.ui.__main__:main',
+            'eduvpn-gui = eduvpn.ui.__main__:eduvpn',
             'letsconnect-gui = eduvpn.ui.__main__:letsconnect',
         ]
     }

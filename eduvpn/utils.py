@@ -1,19 +1,11 @@
+from typing import Optional, Callable
 import threading
-from functools import lru_cache
+from functools import lru_cache, partial, wraps
 from logging import getLogger
 from os import path
 from sys import prefix
-from typing import Callable
 
 logger = getLogger(__file__)
-
-try:
-    import gi
-
-    gi.require_version('Gtk', '3.0')
-    from gi.repository import Gtk
-except (ImportError, ValueError):
-    logger.warning("GTK not available")
 
 
 def get_logger(name_space: str):
@@ -38,30 +30,79 @@ def get_prefix() -> str:
     raise Exception("Can't find eduVPN installation")
 
 
-def thread_helper(func: Callable) -> threading.Thread:
+def custom_server_oauth_url(address):
+    if not address.startswith(('http://', 'https://')):
+        address = f'https://{address}'
+    if not address.endswith('/'):
+        address += '/'
+    return address
+
+
+def thread_helper(func: Callable, *, name: Optional[str] = None) -> threading.Thread:
     """
     Runs a function in a thread
 
     args:
         func (lambda): a function to run in the background
     """
-    thread = threading.Thread(target=func)
+    thread = threading.Thread(target=func, name=name)
     thread.daemon = True
     thread.start()
     return thread
 
 
-# ui thread
-def error_helper(parent: 'Gtk.GObject', msg_big: str, msg_small: str) -> None:  # type: ignore
+def run_in_background_thread(name: Optional[str] = None):
     """
-    Shows a GTK error message dialog.
-    args:
-        parent (GObject): A GTK Window
-        msg_big (str): the big string
-        msg_small (str): the small string
+    Decorator for functions that must always run
+    in a background thread.
     """
-    logger.error(f"{msg_big}: {msg_small}")
-    error_dialog = Gtk.MessageDialog(parent, 0, Gtk.MessageType.ERROR, Gtk.ButtonsType.OK, str(msg_big))  # type: ignore
-    error_dialog.format_secondary_text(str(msg_small))  # type: ignore
-    error_dialog.run()  # type: ignore
-    error_dialog.hide()  # type: ignore
+    def decorator(func):
+
+        @wraps(func)
+        def background_func(*args, **kwargs):
+            thread_helper(partial(func, *args, **kwargs), name=name)
+
+        return background_func
+
+    return decorator
+
+
+def run_in_main_gtk_thread(func):
+    """
+    Decorator for functions that must always run
+    in the main GTK thread.
+    """
+    from gi.repository import GLib
+
+    @wraps(func)
+    def main_gtk_thread_func(*args, **kwargs):
+        GLib.idle_add(partial(func, *args, **kwargs))
+
+    return main_gtk_thread_func
+
+
+def run_periodically(func: Callable[[], None],
+                     interval: float,
+                     name: Optional[str] = None,
+                     ) -> Callable[[], None]:
+    """
+    Run a funtion periodically in a background thread.
+
+    The given function is called every `interval` seconds,
+    until either it returns False
+    or until the returned cancel callback is called.
+    """
+    if name is None:
+        name = 'run-periodically'
+    event = threading.Event()
+
+    @run_in_background_thread(name)
+    def run_periodic_thread():
+        while 1:
+            if event.wait(interval):
+                return
+            elif func() is False:
+                return
+
+    run_periodic_thread()
+    return event.set

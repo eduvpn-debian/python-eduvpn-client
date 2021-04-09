@@ -227,6 +227,7 @@
                         <property name="primary_icon_activatable">False</property>
                         <property name="primary_icon_sensitive">False</property>
                         <property name="placeholder_text" translatable="yes">Search for your institute...</property>
+                        <signal name="activate" handler="on_activate_changed" swapped="no"/>
                         <signal name="search-changed" handler="on_search_changed" swapped="no"/>
                       </object>
                       <packing>
@@ -495,7 +496,7 @@
               <object class="GtkLabel">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes">page 1</property>
+                <property name="label">page 1</property>
               </object>
               <packing>
                 <property name="tab_fill">False</property>
@@ -531,7 +532,7 @@
               <object class="GtkLabel">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes">page 2</property>
+                <property name="label">page 2</property>
               </object>
               <packing>
                 <property name="position">1</property>
@@ -588,7 +589,7 @@
               <object class="GtkLabel">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes">page 3</property>
+                <property name="label">page 3</property>
               </object>
               <packing>
                 <property name="position">2</property>
@@ -645,7 +646,7 @@
               <object class="GtkLabel">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes">page 4</property>
+                <property name="label">page 4</property>
               </object>
               <packing>
                 <property name="position">3</property>
@@ -760,11 +761,78 @@ have completed the authorization</property>
                 <property name="position">4</property>
               </packing>
             </child>
+            <child>
+              <object class="GtkBox" id="loadingPage">
+                <property name="visible">False</property>
+                <property name="can_focus">False</property>
+                <property name="orientation">vertical</property>
+                <property name="spacing">10</property>
+                <child>
+                  <object class="GtkFixed" id="loadingSpacer">
+                    <property name="height_request">100</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="loadingTitle">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Loading</property>
+                    <attributes>
+                      <attribute name="weight" value="bold"/>
+                    </attributes>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="loadingMessage">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Please wait</property>
+                    <property name="justify">center</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">3</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkSpinner" id="loadingSpinner">
+                    <property name="height_request">30</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="active">True</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">5</property>
+                  </packing>
+                </child>
+              </object>
+              <packing>
+                <property name="position">4</property>
+              </packing>
+            </child>
             <child type="tab">
               <object class="GtkLabel">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes">page 4</property>
+                <property name="label">page 4</property>
               </object>
               <packing>
                 <property name="position">4</property>
@@ -1001,7 +1069,7 @@ have completed the authorization</property>
                       <object class="GtkLabel">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">page 1</property>
+                        <property name="label">page 1</property>
                       </object>
                       <packing>
                         <property name="tab_fill">False</property>
@@ -1076,6 +1144,7 @@ have completed the authorization</property>
                                     <property name="receives_default">True</property>
                                     <property name="halign">center</property>
                                     <property name="image_position">top</property>
+                                    <signal name="clicked" handler="on_renew_session_clicked" swapped="no"/>
                                   </object>
                                   <packing>
                                     <property name="expand">True</property>
@@ -1112,7 +1181,7 @@ have completed the authorization</property>
                       <object class="GtkLabel">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">page 2</property>
+                        <property name="label">page 2</property>
                       </object>
                       <packing>
                         <property name="position">1</property>
@@ -1126,7 +1195,7 @@ have completed the authorization</property>
                       <object class="GtkLabel">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">page 3</property>
+                        <property name="label">page 3</property>
                       </object>
                       <packing>
                         <property name="position">2</property>
@@ -1215,7 +1284,7 @@ have completed the authorization</property>
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="halign">start</property>
-                            <property name="label" translatable="yes">0h 00m 00s</property>
+                            <property name="label">0h 00m 00s</property>
                           </object>
                           <packing>
                             <property name="left_attach">1</property>
@@ -1242,7 +1311,7 @@ have completed the authorization</property>
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="halign">start</property>
-                            <property name="label" translatable="yes">0MB</property>
+                            <property name="label">0MB</property>
                           </object>
                           <packing>
                             <property name="left_attach">1</property>
@@ -1269,7 +1338,7 @@ have completed the authorization</property>
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="halign">start</property>
-                            <property name="label" translatable="yes">0MB</property>
+                            <property name="label">0MB</property>
                           </object>
                           <packing>
                             <property name="left_attach">3</property>
@@ -1296,7 +1365,7 @@ have completed the authorization</property>
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="halign">start</property>
-                            <property name="label" translatable="yes">255.255.255.255</property>
+                            <property name="label">255.255.255.255</property>
                           </object>
                           <packing>
                             <property name="left_attach">0</property>
@@ -1323,7 +1392,7 @@ have completed the authorization</property>
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="halign">start</property>
-                            <property name="label" translatable="yes">0000:0000:0000:0000:0000:0000:0000:0000</property>
+                            <property name="label">0000:0000:0000:0000:0000:0000:0000:0000</property>
                           </object>
                           <packing>
                             <property name="left_attach">2</property>
@@ -1424,7 +1493,7 @@ have completed the authorization</property>
               <object class="GtkLabel">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes">page 5</property>
+                <property name="label">page 5</property>
               </object>
               <packing>
                 <property name="position">5</property>
@@ -1482,6 +1551,7 @@ have completed the authorization</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">General failure, please quit</property>
                     <property name="justify">center</property>
+                    <property name="wrap">True</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
