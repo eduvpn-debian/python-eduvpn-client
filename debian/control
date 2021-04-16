@@ -79,7 +79,7 @@ Package: eduvpn-client
 Architecture: all
 Depends:
  ${misc:Depends},
- ${python:Depends},
+ ${python3:Depends},
  python3-eduvpn-client,
  network-manager,
  network-manager-openvpn,
@@ -95,7 +95,7 @@ Package: letsconnect-client
 Architecture: all
 Depends:
  ${misc:Depends},
- ${python:Depends},
+ ${python3:Depends},
  python3-eduvpn-client,
  network-manager,
  network-manager-openvpn,
