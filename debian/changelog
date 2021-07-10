@@ -1,3 +1,10 @@
+python-eduvpn-client (2.0.0-2) stable; urgency=medium
+
+  * address issue #358
+  * add new key
+
+ -- KERN packaging <packaging@kernsuite.info>  Sat, 10 Jul 2021 11:01:01 +0200
+
 python-eduvpn-client (2.0.0-1) stable; urgency=medium
 
   [ Gijs Molenaar ]
