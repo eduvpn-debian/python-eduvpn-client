@@ -2,7 +2,7 @@
 #       install the client.
 #
 
-.PHONY: all dockers
+.PHONY: all dockers doc
 
 VENV=./venv
 
@@ -37,6 +37,7 @@ deb:
 	apt install -y \
 		gir1.2-gtk-3.0 \
 		gir1.2-notify-0.7 \
+		libdbus-glib-1-dev \
 		python3-gi \
 		python3-requests-oauthlib \
 		python3-cryptography \

@@ -1,5 +1,7 @@
 from typing import Union, Optional, Iterable, List, Dict
 import os
+from urllib.parse import quote_plus
+import nacl.exceptions
 from eduvpn import remote
 from eduvpn import storage
 from eduvpn.i18n import extract_translation, retrieve_country_name
@@ -45,6 +47,9 @@ class InstituteAccessServer:
     def oauth_login_url(self):
         return self.base_url
 
+    def authentication_url(self, oauth_url: str) -> str:
+        return oauth_url
+
 
 class SecureInternetServer:
     """
@@ -85,6 +90,17 @@ class SecureInternetServer:
     @property
     def oauth_login_url(self):
         return self.base_url
+
+    def authentication_url(
+        self,
+        organisation: 'OrganisationServer',
+        oauth_url: str,
+    ) -> str:
+        if self.authentication_url_template is None:
+            return oauth_url
+        return (self.authentication_url_template
+                .replace('@ORG_ID@', quote_plus(organisation.org_id))
+                .replace('@RETURN_TO@', quote_plus(oauth_url)))
 
 
 class OrganisationServer:
@@ -144,6 +160,9 @@ class CustomServer:
     def oauth_login_url(self):
         return custom_server_oauth_url(self.address)
 
+    def authentication_url(self, oauth_url: str) -> str:
+        return oauth_url
+
 
 class ServerInfo:
     def __init__(self, api_base_uri, token_endpoint, auth_endpoint):
@@ -157,7 +176,7 @@ class Profile:
                  profile_id: str,
                  display_name: str,
                  two_factor: bool,
-                 default_gateway: bool):
+                 default_gateway: Optional[bool] = None):
         self.profile_id = profile_id
         self.display_name = display_name
         self.two_factor = two_factor
@@ -200,6 +219,9 @@ class SecureInternetLocation:
         assert self.server.oauth_login_url == self.location.oauth_login_url
         return self.server.oauth_login_url
 
+    def authentication_url(self, oauth_url: str) -> str:
+        return self.location.authentication_url(self.server, oauth_url)
+
 
 # typing aliases
 PredefinedServer = Union[
@@ -227,6 +249,11 @@ def is_search_match(server: PredefinedServer, query: str) -> bool:
         return False
 
 
+class ServerSignatureError(Exception):
+    def __init__(self, uri: str):
+        self.uri = uri
+
+
 class ServerDatabase:
     def __init__(self):
         # TODO load the servers from a cache
@@ -241,8 +268,14 @@ class ServerDatabase:
         This method must be thread-safe.
         """
         new_servers = []
-        server_list = remote.list_servers(SERVER_URI)
-        organisation_list = remote.list_organisations(ORGANISATION_URI)
+        try:
+            server_list = remote.list_servers(SERVER_URI)
+        except nacl.exceptions.BadSignatureError:
+            raise ServerSignatureError(SERVER_URI)
+        try:
+            organisation_list = remote.list_organisations(ORGANISATION_URI)
+        except nacl.exceptions.BadSignatureError:
+            raise ServerSignatureError(ORGANISATION_URI)
         for server_data in server_list:
             server_type = server_data.pop('server_type')
             if server_type == 'institute_access':
