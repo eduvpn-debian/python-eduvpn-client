@@ -1,4 +1,4 @@
-FROM fedora:31
+FROM fedora:33
 
 RUN dnf install -y \
     libnotify \
@@ -15,4 +15,4 @@ ADD . /code
 WORKDIR /code
 RUN mkdir -p /usr/local/lib/python3.6/site-packages/
 RUN python3 setup.py install
-RUN python3 setup.py test
+CMD python3 setup.py test

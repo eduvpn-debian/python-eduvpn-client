@@ -4,22 +4,18 @@ Developer notes
 Notes about code
 ----------------
 
-Use ``eduvpn.util.thread_helper(lambda: func(arg='arg')`` to schedule long running actions from the UI (main) thread.
+Use the decorator ``eduvpn.utils.run_in_background_thread`` to schedule long running action
+in the background to avoid blocking the main thread.
 
-
-Use ``GLib.idle_add(lambda: func(arg='arg')`` to schedule UI updates back on the main thread.
-
-Never call GTK functions directly from the background thread.
+Never call GTK functions directly from a background thread,
+use ``eduvpn.utils.run_in_main_gtk_thread`` to decorate functions
+that must run on the main thread (eg. UI updates).
 
 
 ``eduvpn.actions`` are the entrypoints to the application and are triggered from the main menu or a VPN status
 change.
 
-``eduvpn.steps`` contains all the various steps in the application flow.
-
 ``eduvpn.remote`` contains all remote requests.
-
-```eduvpn.other_nm`` is a fork of the python NetworkManager wrapper.
 
 
 Flow schema
@@ -28,6 +24,25 @@ Flow schema
 .. image:: flow.png
    :target: _images/flow.png
    :alt: The application flow
+
+
+Running the tests
+-----------------
+
+To run the automated tests,
+use the following command from the root of the project.
+
+.. code-block:: console
+
+    $ pytest
+
+To include integration tests against an actual server,
+you'll need to provide the address and login credentials
+in an environment variable.
+
+.. code-block:: console
+
+    $ TEST_SERVER=username:password@example.com pytest
 
 
 How to make a release
@@ -51,15 +66,15 @@ How to make a release
 
 * Do a manual wheel upload using `twine <https://github.com/pypa/twine>`_:
 
-.. code-block::
+.. code-block:: console
 
-    # rm dist/*
+    $ rm dist/*
     $ python setup.py bdist_wheel sdist
     $ twine upload dist/*
 
 * Build packages to the `COPR repository <https://copr.fedorainfracloud.org/coprs/gijzelaerr/eduvpn-client/>`_:
 
-.. code-block::
+.. code-block:: console
 
     on copr -> builds -> new build -> scm.
     clone URL: https://github.com/eduvpn/python-eduvpn-client

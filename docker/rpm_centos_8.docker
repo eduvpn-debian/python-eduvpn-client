@@ -20,7 +20,8 @@ RUN yum install -y	\
     python3-dateutil \
     python3-cryptography \
     python3-pycodestyle \
-    NetworkManager-libnm
+    NetworkManager-libnm \
+    desktop-file-utils
 
 
 
@@ -32,8 +33,4 @@ WORKDIR /code
 RUN python3 setup.py sdist
 RUN cp dist/*.tar.gz /root/rpmbuild/SOURCES/.
 
-RUN rpmbuild -bs eduvpn.spec
-RUN rpmbuild -bb eduvpn.spec
-
-
-
+CMD rpmbuild -bs eduvpn.spec && rpmbuild -bb eduvpn.spec

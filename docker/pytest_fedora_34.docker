@@ -1,24 +1,18 @@
-FROM centos:8
-
-RUN dnf install -y epel-release
+FROM fedora:34
 
 RUN dnf install -y \
     libnotify \
     gtk3 \
-    python3 \
-    python3-pynacl \
-    python3-pip \
     python3-requests-oauthlib \
     python3-gobject \
     python3-pytest \
+    python3-pynacl \
     python3-cryptography \
     python3-dbus \
     NetworkManager-libnm
 
-
 ADD . /code
 WORKDIR /code
-
-RUN pip3 install --upgrade setuptools pip
-RUN pip3 install .
-CMD pytest-3 -vv
+RUN mkdir -p /usr/local/lib/python3.6/site-packages/
+RUN python3 setup.py install
+CMD python3 setup.py test

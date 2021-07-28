@@ -1,5 +1,6 @@
 from typing import Optional
 import logging
+import webbrowser
 from requests_oauthlib import OAuth2Session
 from oauthlib.oauth2.rfc6749.errors import (
     InvalidGrantError as InvalidOauthGrantError)
@@ -8,12 +9,13 @@ from .. import nm
 from .. import actions
 from .. import remote
 from .. import crypto
-from ..oauth2 import OAuthWebServer
+from .. import oauth2
 from ..app import Application
 from ..server import (
     AnyServer, ConfiguredServer, InstituteAccessServer,
     SecureInternetServer, OrganisationServer, CustomServer,
     SecureInternetLocation, Profile)
+from .error import get_error_message
 from ..utils import run_in_background_thread
 
 
@@ -38,12 +40,17 @@ def on_setup_oauth(app: Application, server: AnyServer):
             # to do that here.
             pass
 
-    web_server = OAuthWebServer.start(
-        server_info.token_endpoint,
-        server_info.auth_endpoint,
-        oauth_token_callback,
-    )
-    app.interface_transition_threadsafe('ready_for_oauth_setup', web_server)
+    webserver, browser_url = oauth2.run_challenge_in_background(
+        server_info.token_endpoint, server_info.auth_endpoint, app.variant, oauth_token_callback)
+    if isinstance(server, OrganisationServer):
+        secure_internet = app.server_db.get_secure_internet_server(server.secure_internet_home)
+        if secure_internet:
+            browser_url = secure_internet.authentication_url(server, browser_url)
+        else:
+            logger.warning(f"missing 'secure internet server' for {server!r}")
+    logger.info(f"opening browser with {browser_url}")
+    webbrowser.open(browser_url)
+    app.interface_transition_threadsafe('ready_for_oauth_setup', webserver)
 
 
 @run_in_background_thread('oauth-refresh')
@@ -178,7 +185,9 @@ def on_chosen_profile(app: Application,
 
 
 def enter_error_state(app: Application, error: Exception):
-    app.interface_transition('encountered_exception', error)
+    message = get_error_message(error)
+    from .transition import go_to_main_state
+    app.interface_transition('encountered_exception', message, go_to_main_state)
 
 
 def enter_error_state_threadsafe(app: Application, error: Exception):

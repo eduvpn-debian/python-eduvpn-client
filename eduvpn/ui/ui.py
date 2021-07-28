@@ -19,14 +19,17 @@ from ..settings import HELP_URL
 from ..interface import state as interface_state
 from .. import network as network_state
 from ..server import CustomServer
+from ..variants import ApplicationVariant
 from ..app import Application
 from ..state_machine import (
     ENTER, EXIT, transition_callback, transition_edge_callback)
 from ..crypto import Validity
+from ..nm import nm_available
 from ..utils import get_prefix, run_in_main_gtk_thread, run_periodically
 from ..i18n import init as i18n_init
+from .. import notify
 from . import search
-from .utils import show_ui_component, link_markup
+from .utils import show_ui_component, link_markup, show_error_dialog
 
 logger = logging.getLogger(__name__)
 
@@ -119,17 +122,15 @@ def allow_certificate_renewal(validity: Optional[Validity]):
 
 
 class EduVpnGui:
-    def __init__(self, lets_connect: bool):
+    def __init__(self, app_variant: ApplicationVariant):
         """
         Initialize all data structures needed in the GUI
         """
-        self.lets_connect = lets_connect
-
         self.builder: Any = Gtk.Builder()
 
         prefix = get_prefix()
         try:
-            self.builder.set_translation_domain(i18n_init(lets_connect, prefix))
+            self.builder.set_translation_domain(i18n_init(app_variant, prefix))
             logger.info(u"i18n successfully initialized")
         except Exception as e:
             logger.error(f"i18n initialization failed: {e}")
@@ -150,6 +151,8 @@ class EduVpnGui:
             "on_activate_changed": self.on_activate_changed,
             "on_add_other_server_button_clicked":
                 self.on_add_other_server_button_clicked,
+            "on_add_custom_server_button_clicked":
+                self.on_add_custom_server_button_clicked,
             "on_cancel_browser_button_clicked":
                 self.on_cancel_oauth_setup_button_clicked,
             "on_connection_switch_state_set":
@@ -163,16 +166,38 @@ class EduVpnGui:
         for name in variable_objects:
             self.show_component(name, False)
 
-        self.app = Application(run_in_main_gtk_thread)
+        self.app = Application(app_variant, run_in_main_gtk_thread)
 
         # TODO implement settings page (issue #334)
         self.show_component('settingsButton', False)
 
+        window = self.builder.get_object('applicationWindow')
+        window.set_title(self.app.variant.name)
+        window.set_icon_from_file(self.app.variant.icon)
+
+        if self.app.variant.logo:
+            self.builder.get_object('logoImage').set_from_file(self.app.variant.logo)
+
+        if self.app.variant.server_image:
+            self.builder.get_object('findYourInstituteImage').set_from_file(self.app.variant.server_image)
+
+        if not self.app.variant.use_predefined_servers:
+            self.builder.get_object('findYourInstituteLabel').set_text(_("Server address"))
+            self.builder.get_object('findYourInstituteSearch').set_placeholder_text(_("Enter the server address"))
+
     def run(self):
         logger.info("starting ui")
+        notify.initialize(self.app.variant)
         self.show_component('applicationWindow', True)
         self.app.connect_state_transition_callbacks(self)
         self.app.initialize()
+
+        if not nm_available():
+            show_error_dialog(
+                self.builder,
+                name=_("Error"),
+                title=_("NetworkManager not available"),
+                message=_("The application will not be able to configure the network."))
 
     # ui functions
 
@@ -212,6 +237,16 @@ class EduVpnGui:
     def default_network_transition_callback(self, old_state, new_state):
         if isinstance(self.app.interface_state, interface_state.ConnectionStatus):
             self.update_connection_status()
+
+    @transition_edge_callback(ENTER, network_state.CertificateExpiredState)
+    def enter_CertificateExpiredState(self, old_state, new_state):
+        notification = notify.Notification(self.app.variant)
+        notification.show(
+            title=_("Your session has expired"),
+            message=_(
+                "Renew the session "
+                "to continue using this connection."),
+        )
 
     def update_connection_server(self):
         server = self.app.interface_state.server
@@ -316,9 +351,18 @@ class EduVpnGui:
 
     @transition_edge_callback(ENTER, interface_state.ConfigureCustomServer)
     def enter_ConfigureCustomServer(self, old_state, new_state):
-        search.update_results(self.builder, [CustomServer(new_state.address)])
-        if not isinstance(old_state, interface_state.configure_server_states):
-            self.set_search_text(new_state.address)
+        if self.app.variant.use_predefined_servers:
+            search.update_results(self.builder, [CustomServer(new_state.address)])
+            if not isinstance(old_state, interface_state.configure_server_states):
+                self.set_search_text(new_state.address)
+        else:
+            entered_address = len(new_state.address) > 0
+            self.show_component('addCustomServerRow', entered_address)
+
+    @transition_edge_callback(EXIT, interface_state.ConfigureCustomServer)
+    def exit_ConfigureCustomServer(self, old_state, new_state):
+        if not self.app.variant.use_predefined_servers:
+            self.show_component('addCustomServerRow', False)
 
     @transition_edge_callback(ENTER, interface_state.MainState)
     def enter_MainState(self, old_state, new_state):
@@ -511,10 +555,11 @@ class EduVpnGui:
         self.show_component('messageText', True)
         self.set_text('messageLabel', _("Error"))
         self.set_text('messageText', new_state.message)
-        self.show_component('messageButton', True)
-        self.builder.get_object('messageButton').set_label(_("Ok"))
-        button = self.builder.get_object('messageButton')
-        button.connect("clicked", self.on_acknowledge_error)
+        if new_state.next_transition is not None:
+            self.show_component('messageButton', True)
+            self.builder.get_object('messageButton').set_label(_("Ok"))
+            button = self.builder.get_object('messageButton')
+            button.connect("clicked", self.on_acknowledge_error)
 
     @transition_edge_callback(EXIT, interface_state.ErrorState)
     def exit_ErrorState(self, old_state, new_state):
@@ -540,6 +585,11 @@ class EduVpnGui:
         logger.debug("on_add_other_server_button_clicked")
         self.app.interface_transition('configure_new_server')
 
+    def on_add_custom_server_button_clicked(self, button) -> None:
+        logger.debug("on_add_custom_server_button_clicked")
+        server = CustomServer(self.app.interface_state.address)
+        self.app.interface_transition('connect_to_server', server)
+
     def on_select_server(self, selection):
         logger.debug("selected search result")
         (model, tree_iter) = selection.get_selected()
@@ -558,14 +608,14 @@ class EduVpnGui:
     def on_search_changed(self, _=None):
         query = self.builder.get_object('findYourInstituteSearch').get_text()
         logger.debug(f"entered search query: {query}")
-        if self.lets_connect or query.count('.') >= 2:
+        if self.app.variant.use_predefined_servers and query.count('.') < 2:
+            self.app.interface_transition(
+                'enter_search_query', search_query=query)
+        else:
             # Anything with two periods is interpreted
             # as a custom server address.
             self.app.interface_transition(
                 'enter_custom_address', address=query)
-        else:
-            self.app.interface_transition(
-                'enter_search_query', search_query=query)
 
     def on_activate_changed(self, _=None):
         logger.debug("on_activate_changed")
