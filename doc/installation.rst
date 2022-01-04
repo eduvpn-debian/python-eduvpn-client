@@ -12,7 +12,7 @@ The eduVPN client has been tested with:
  * Debian 10 (Buster)
  * Ubuntu 20.04 LTS and 18.04 LTS
  * CentOS 8
- * Fedora 33 and 34
+ * Fedora 34 and 35
 
 .. note::
 
@@ -43,10 +43,10 @@ You can install the latest release of the eduVPN client on Fedora or CentOS by r
 .. code-block:: console
 
     $ sudo dnf install dnf-plugins-core
-    $ sudo dnf copr enable gijzelaerr/eduvpn-client
+    $ sudo dnf copr enable @eduvpn/eduvpn-client
     $ sudo dnf install eduvpn-client
 
-More information is available at `fedora copr <https://copr.fedorainfracloud.org/coprs/gijzelaerr/eduvpn-client/>`_.
+More information is available at `fedora copr <https://copr.fedorainfracloud.org/coprs/g/eduvpn/eduvpn-client/>`_.
 
 
 Manual source installation

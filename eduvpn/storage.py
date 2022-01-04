@@ -7,7 +7,9 @@ from os import PathLike
 from datetime import datetime
 import json
 from oauthlib.oauth2.rfc6749.tokens import OAuth2Token
-from eduvpn.settings import CONFIG_PREFIX
+import eduvpn
+from eduvpn.settings import CONFIG_PREFIX, CONFIG_DIR_MODE
+from eduvpn.ovpn import Ovpn
 from eduvpn.utils import get_logger
 
 logger = get_logger(__name__)
@@ -19,6 +21,25 @@ class ConnectionType(str, Enum):
     INSTITUTE = "INSTITUTE",
     SECURE = "SECURE",
     OTHER = "OTHER"
+
+
+def is_config_dir_permissions_correct() -> bool:
+    return CONFIG_PREFIX.stat().st_mode & 0o777 == CONFIG_DIR_MODE
+
+
+def check_config_dir_permissions():
+    if not is_config_dir_permissions_correct():
+        logger.warning(
+            f"The permissions for the config dir ({CONFIG_PREFIX}) "
+            f"are not as expected, it may be world readable!")
+
+
+def ensure_config_dir_exists():
+    """
+    Ensure the config directory exists with the correct permissions.
+    """
+    CONFIG_PREFIX.mkdir(parents=True, exist_ok=True, mode=CONFIG_DIR_MODE)
+    check_config_dir_permissions()
 
 
 def get_all_metadatas() -> dict:
@@ -40,7 +61,7 @@ def _write_metadatas(storage: dict) -> None:
     """
     try:
         dump = json.dumps(storage)
-        _metadata_path.parent.mkdir(parents=True, exist_ok=True)
+        ensure_config_dir_exists()
         with open(_metadata_path, 'w') as f:
             f.write(dump)
     except Exception as e:
@@ -57,7 +78,7 @@ def _get_setting(what: str) -> Optional[str]:
 
 def _set_setting(what: str, value: str):
     p = (CONFIG_PREFIX / what).expanduser()
-    p.parent.mkdir(parents=True, exist_ok=True)
+    ensure_config_dir_exists()
     with open(p, 'w') as f:
         f.write(value)
 
@@ -110,6 +131,17 @@ def get_current_metadata(auth_url: str) -> Optional[Metadata]:
         )
     else:
         return None
+
+
+def get_current_validity(auth_url: str) -> Optional['eduvpn.session.Validity']:
+    metadata = get_current_metadata(auth_url)
+    if metadata is None:
+        return None
+    *_, start, end = metadata
+    if start is None or end is None:
+        return None
+    from .session import Validity
+    return Validity(start, end)
 
 
 def set_metadata(
@@ -197,9 +229,17 @@ def write_config(config: str, private_key: str, certificate: str, target: PathLi
     """
     Write the configuration to target.
     """
+    ovpn = Ovpn.parse(config)
+    write_ovpn(ovpn, private_key, certificate, target)
+
+
+def write_ovpn(ovpn: Ovpn, private_key: str, certificate: str, target: PathLike):
+    """
+    Write the OVPN configuration file to target.
+    """
     logger.info(f"Writing configuration to {target}")
     with open(target, mode='w+t') as f:
-        f.writelines(config)
+        ovpn.write(f)
         f.writelines(f"\n<key>\n{private_key}\n</key>\n")
         f.writelines(f"\n<cert>\n{certificate}\n</cert>\n")
 

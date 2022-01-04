@@ -3,7 +3,7 @@ from glob import glob
 
 from setuptools import setup, find_packages
 
-__version__ = "2.1.0"
+__version__ = "2.2.0"
 
 
 install_requires = [
@@ -17,11 +17,14 @@ install_requires = [
 tests_require = [
     'pytest',
     'pycodestyle',
+    'pylama',
 ]
 
 mypy_require = [
     'mypy',
     'PyGObject-stubs',
+    'types-requests',
+    'types-setuptools',
 ]
 
 gui_require = [

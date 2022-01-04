@@ -2,7 +2,7 @@ from typing import Optional, Callable
 import threading
 from functools import lru_cache, partial, wraps
 from logging import getLogger
-from os import path
+from os import path, environ
 from sys import prefix
 
 logger = getLogger(__file__)
@@ -28,6 +28,10 @@ def get_prefix() -> str:
         if path.isfile(path.join(option, target)):
             return option
     raise Exception("Can't find eduVPN installation")
+
+
+def get_config_dir() -> str:
+    return environ.get("XDG_CONFIG_HOME", "~/.config")
 
 
 def custom_server_oauth_url(address):
@@ -106,3 +110,42 @@ def run_periodically(func: Callable[[], None],
 
     run_periodic_thread()
     return event.set
+
+
+def run_delayed(func: Callable[[], None],
+                delay: float,
+                name: Optional[str] = None,
+                ) -> Callable[[], None]:
+    """
+    Run a function with a delay.
+
+    The given function is called once when
+    `delay` seconds have passed.
+    If the delay is less then zero, the function is called as soon as possible.
+    Call the returned callback to cancel calling the delayed function.
+    """
+    if name is None:
+        name = 'run-delayed'
+    event = threading.Event()
+
+    @run_in_background_thread(name)
+    def run_delayed_thread():
+        if event.wait(delay):
+            return
+        else:
+            func()
+
+    run_delayed_thread()
+    return event.set
+
+
+def cancel_at_context_end(cancel_callback: Callable[[], None]):
+    """
+    This generator is intended to be used with
+    `state_machine.transition_level_callback`
+    to cancel a thread when a state is exited.
+    """
+    try:
+        yield
+    finally:
+        cancel_callback()
