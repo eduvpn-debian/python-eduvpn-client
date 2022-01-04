@@ -20,12 +20,11 @@ Build-Depends: debhelper (>= 9),
     python3-qrcode,
     python3-pillow,
     python3-cryptography
-Standards-Version: 3.9.8
+Standards-Version:  4.5.1
 Homepage: https://github.com/gijzelaerr/python-eduvpn-client
-X-Python-Version: >= 2.6
-X-Python3-Version: >= 3.2
 Vcs-Git: https://github.com/eduvpn-debian/python-eduvpn-client
 Vcs-Browser: https://github.com/eduvpn-debian/python-eduvpn-client
+X-Python3-Version: >= 3.6
 Testsuite: autopkgtest-pkg-python
 
 Package: eduvpn-client-data
