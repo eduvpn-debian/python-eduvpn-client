@@ -5,7 +5,6 @@ from functools import partial
 from time import sleep
 from gettext import gettext
 from . import nm
-from .crypto import Validity
 from . import settings
 from .state_machine import BaseState
 from .app import Application
@@ -60,9 +59,6 @@ class NetworkState(BaseState):
     def set_error(self, app: Application, message: Optional[str] = None) -> 'NetworkState':
         return ConnectionErrorState(message)
 
-    def set_certificate_expired(self, app: Application) -> 'NetworkState':
-        return CertificateExpiredState()
-
 
 class InitialNetworkState(NetworkState):
     """
@@ -72,28 +68,16 @@ class InitialNetworkState(NetworkState):
     the actual network state is obtained.
     """
 
-    def found_active_connection(self,
-                                app: Application,
-                                server: Server,
-                                validity: Optional[Validity],
-                                ) -> NetworkState:
-        """
-        An already active connection was found.
-        """
-        app.interface_transition('found_active_connection', server, validity)
-        return ConnectedState()
-
-    def found_previous_connection(self,
-                                  app: Application,
-                                  server: Server,
-                                  ) -> NetworkState:
+    def found_previous_connection(self, app: Application) -> NetworkState:
         """
         A previously established connection was found.
-
-        This will be the default connection to start.
         """
-        app.interface_transition('no_active_connection_found')
-        return DisconnectedState()
+        state = get_network_state(app)
+        if isinstance(state, (DisconnectedState, UnknownState)):
+            app.interface_transition('no_active_connection_found')
+        else:
+            app.interface_transition('found_active_connection')
+        return state
 
     def no_previous_connection_found(self, app: Application) -> NetworkState:
         """
@@ -157,11 +141,6 @@ def reconnect(app: Application) -> NetworkState:
     return ReconnectingState()
 
 
-def renew_certificate(app: Application) -> NetworkState:
-    app.interface_transition('renew_certificate')
-    return ConnectedState()
-
-
 UNKNOWN_STATE_MAX_RETRIES = 5
 
 
@@ -188,7 +167,7 @@ def enter_unknown_state(app: Application) -> NetworkState:
                 return
             _, status = nm.connection_status(nm.get_client())
             logger.debug(f"polling network state: {status}")
-        handle_active_connection_status(app, status)
+        app.make_func_threadsafe(handle_active_connection_status)(app, status)
 
     determine_network_state_thread()
     return UnknownState()
@@ -225,6 +204,21 @@ def on_any_update_callback(app: Application):
         app.network_transition('set_unknown')
     else:
         handle_active_connection_status(app, status)
+
+
+def get_network_state(app: Application) -> NetworkState:
+    _, status = nm.connection_status(nm.get_client())
+    if status is nm.NM.ActiveConnectionState.ACTIVATING:
+        return ConnectingState()
+    elif status is nm.NM.ActiveConnectionState.ACTIVATED:
+        return ConnectedState()
+    elif status in [nm.NM.ActiveConnectionState.DEACTIVATED,
+                    nm.NM.ActiveConnectionState.DEACTIVATING]:
+        return DisconnectedState()
+    elif status is nm.NM.ActiveConnectionState.UNKNOWN or status is None:
+        return enter_unknown_state(app)
+    else:
+        raise ValueError(status)
 
 
 def handle_active_connection_status(app: Application, status: nm.NM.ActiveConnectionState):
@@ -279,12 +273,6 @@ class ConnectedState(NetworkState):
     def disconnect(self, app: Application) -> NetworkState:
         return disconnect(app)
 
-    def renew_certificate(self, app: Application) -> NetworkState:
-        """
-        Re-estabilish a connection to the server.
-        """
-        return renew_certificate(app)
-
 
 class DisconnectedState(NetworkState):
     """
@@ -313,21 +301,6 @@ class ReconnectingState(NetworkState):
 
     def set_disconnected(self, app: Application) -> NetworkState:
         return connect(app)
-
-
-class CertificateExpiredState(NetworkState):
-    """
-    The network could not connect because the certifcate has expired.
-    """
-
-    status_label = translated_property("Certificate expired")
-    status_image = StatusImage.NOT_CONNECTED
-
-    def renew_certificate(self, app: Application) -> NetworkState:
-        """
-        Re-estabilish a connection to the server.
-        """
-        return renew_certificate(app)
 
 
 class ConnectionErrorState(NetworkState):

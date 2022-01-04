@@ -2,7 +2,6 @@ from typing import Optional, List, Callable
 from requests_oauthlib import OAuth2Session
 from ..state_machine import BaseState
 from ..oauth2 import OAuthWebServer
-from ..crypto import Validity
 from ..app import Application
 from ..server import (
     AnyServer, PredefinedServer, ConfiguredServer,
@@ -23,16 +22,24 @@ class InterfaceState(BaseState):
         # Loading the server db doesn't normally change the interface state.
         return self
 
-    def toggle_settings(self, app: Application) -> 'InterfaceState':
-        # Toggling the settings page normally shows the settings page.
-        return ConfigureSettings(self)
-
     def encountered_exception(self,
                               app: Application,
                               message: str,
                               next_transition: Optional[Transition] = None,
                               ) -> 'InterfaceState':
         return ErrorState(message, next_transition)
+
+    def restart(self, app: Application):
+        from .. import network as network_state
+        if isinstance(app.network_state, network_state.InitialNetworkState):
+            return InitialInterfaceState()
+        elif isinstance(app.network_state, network_state.UnconnectedState):
+            return transition.go_to_main_state(app)
+        else:
+            return ConnectionStatus()
+
+    def renew_session(self, app: Application, server: ConfiguredServer) -> 'InterfaceState':
+        return transition.connect_to_server(app, server, renew=True)
 
 
 class InitialInterfaceState(InterfaceState):
@@ -43,15 +50,11 @@ class InitialInterfaceState(InterfaceState):
     the actual first state has been determined.
     """
 
-    def found_active_connection(self,
-                                app: Application,
-                                server: ConfiguredServer,
-                                validity: Optional[Validity],
-                                ) -> InterfaceState:
+    def found_active_connection(self, app: Application) -> InterfaceState:
         """
         An connection is already active, show its details.
         """
-        return ConnectionStatus(server, validity)
+        return ConnectionStatus()
 
     def no_active_connection_found(self, app: Application) -> InterfaceState:
         """
@@ -340,23 +343,14 @@ class ConfiguringConnection(InterfaceState):
     def __init__(self, server: AnyServer):
         self.server = server
 
-    def finished_configuring_connection(self,
-                                        app: Application,
-                                        validity: Optional[Validity],
-                                        ) -> InterfaceState:
-        return ConnectionStatus(self.server, validity)
+    def finished_configuring_connection(self, app: Application) -> InterfaceState:
+        return ConnectionStatus()
 
 
 class ConnectionStatus(InterfaceState):
     """
     Show info on the active connection status.
     """
-
-    def __init__(self,
-                 server: AnyServer,
-                 validity: Optional[Validity]):
-        self.server = server
-        self.validity = validity
 
     def go_back(self, app: Application) -> InterfaceState:
         return transition.go_to_main_state(app)
@@ -368,21 +362,6 @@ class ConnectionStatus(InterfaceState):
     def deactivate_connection(self, app: Application) -> InterfaceState:
         app.network_transition('disconnect')
         return self
-
-    def renew_certificate(self, app: Application) -> InterfaceState:
-        return transition.connect_to_server(app, self.server, renew=True)
-
-
-class ConfigureSettings(InterfaceState):
-    """
-    Allow the user to configure the application settings.
-    """
-
-    def __init__(self, previous_state):
-        self.previous_state = previous_state
-
-    def toggle_settings(self, app: Application) -> InterfaceState:
-        return self.previous_state
 
 
 class ErrorState(InterfaceState):
