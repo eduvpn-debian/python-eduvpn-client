@@ -30,3 +30,6 @@ override_dh_auto_build:
 	PYTHONPATH=. http_proxy='127.0.0.1:9' sphinx-build -N -bman doc/ build/man # Manpage generator
 	mv build/man/python-eduvpn-client.1 build/man/eduvpn-client.1
 
+
+override_dh_builddeb:
+	dh_builddeb -- -Zxz
