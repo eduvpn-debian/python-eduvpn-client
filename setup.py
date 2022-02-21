@@ -3,7 +3,7 @@ from glob import glob
 
 from setuptools import setup, find_packages
 
-__version__ = "2.2.0"
+__version__ = "2.2.1"
 
 
 install_requires = [
@@ -17,7 +17,6 @@ install_requires = [
 tests_require = [
     'pytest',
     'pycodestyle',
-    'pylama',
 ]
 
 mypy_require = [
@@ -85,6 +84,7 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3 :: Only",
         "Topic :: System :: Operating System Kernels :: Linux",
         "Topic :: System :: Networking",
