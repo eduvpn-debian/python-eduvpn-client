@@ -1,3 +1,10 @@
+python-eduvpn-client (2.2.1-1) stable; urgency=medium
+
+  [ Gijs Molenaar ]
+  * New upstream version 2.2.1
+
+ -- eduVPN GNU/Linux client packaging key <eduvpn@surf.nl>  Mon, 21 Feb 2022 12:29:09 +0100
+
 python-eduvpn-client (2.2.0-1) stable; urgency=medium
 
   [ Gijs Molenaar ]
