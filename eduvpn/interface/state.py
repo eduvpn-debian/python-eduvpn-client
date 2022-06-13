@@ -361,6 +361,7 @@ class ConnectionStatus(InterfaceState):
 
     def deactivate_connection(self, app: Application) -> InterfaceState:
         app.network_transition('disconnect')
+        event.on_disconnect(app)
         return self
 
 

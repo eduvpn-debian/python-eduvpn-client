@@ -1,15 +1,29 @@
+import sys
 from typing import Optional, Callable
 import threading
+from datetime import datetime
+from email.utils import parsedate_to_datetime
 from functools import lru_cache, partial, wraps
+from gettext import gettext
 from logging import getLogger
 from os import path, environ
 from sys import prefix
+from requests import Session
+from requests.adapters import HTTPAdapter, Retry
+
 
 logger = getLogger(__file__)
 
 
 def get_logger(name_space: str):
     return getLogger(name_space)
+
+
+def add_retry_adapter(session: Session, retries: int):
+    adapter = HTTPAdapter(max_retries=Retry(total=retries))
+    session.mount('http://', adapter)
+    session.mount('https://', adapter)
+    return session
 
 
 @lru_cache(maxsize=1)
@@ -149,3 +163,42 @@ def cancel_at_context_end(cancel_callback: Callable[[], None]):
         yield
     finally:
         cancel_callback()
+
+
+if sys.version_info < (3, 9):
+    # Backported from Python 3.10
+    # https://github.com/python/cpython/blob/3.10/Lib/functools.py#L651
+    def cache(func):
+        from functools import lru_cache
+        return lru_cache(maxsize=None)(func)
+else:
+    from functools import cache  # noqa: W0611
+
+
+def parse_http_date_header(date: str) -> datetime:
+    return parsedate_to_datetime(date)
+
+
+parse_http_expires_header = parse_http_date_header
+
+
+def get_human_readable_bytes(total_bytes: int) -> str:
+    """
+    Helper function to calculate the human readable bytes.
+    E.g. B, kB, MB, GB, TB.
+    """
+    suffix = ""
+    hr_bytes = float(total_bytes)
+    for suffix in ["B", "kB", "MB", "GB", "TB"]:
+        if hr_bytes < 1024.0:
+            break
+        if suffix != "TB":
+            hr_bytes /= 1024.0
+
+    if suffix == "B":
+        return f"{int(hr_bytes)} {suffix}"
+    return f"{hr_bytes:.2f} {suffix}"
+
+
+def translated_property(text):
+    return property(lambda self: gettext(text))  # type: ignore

@@ -7,6 +7,8 @@ from requests_oauthlib import OAuth2Session
 
 from eduvpn.crypto import common_name_from_cert
 from eduvpn.crypto import validate
+from eduvpn.utils import add_retry_adapter
+from eduvpn.settings import MAX_HTTP_RETRIES, MAX_HTTP_TIMEOUT
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +24,8 @@ def request(uri: str, verify: bool = False) -> dict:
     """
     logger.info(f"Requesting {uri}")
     try:
-        response = requests.get(uri)
+        with add_retry_adapter(requests.Session(), MAX_HTTP_RETRIES) as session:
+            response = session.get(uri, timeout=MAX_HTTP_TIMEOUT)
     except Exception as e:
         msg = f"Got exception {e} requesting {uri}"
         logger.debug(msg)
@@ -47,16 +50,24 @@ def request(uri: str, verify: bool = False) -> dict:
     return response.json()
 
 
+def check_response(response: requests.Response):
+    if response.status_code != 200:
+        try:
+            uri = response.history[0].url
+        except IndexError:
+            uri = '<empty>'
+        msg = f"Got error code {response.status_code} requesting {uri}"
+        logger.error(msg)
+        raise IOError(msg)
+
+
 def oauth_request(oauth: OAuth2Session, uri: str, method: str = 'get'):
     """
     Do an oauth request and check if there are no issues
     """
     call = getattr(oauth, method)
     response = call(uri)
-    if response.status_code != 200:
-        msg = f"Got error code {response.status_code} requesting {uri}"
-        logger.error(msg)
-        raise IOError(msg)
+    check_response(response)
     return response
 
 
