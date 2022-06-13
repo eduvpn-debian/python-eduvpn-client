@@ -1,5 +1,5 @@
+from typing import Optional
 import logging
-from datetime import datetime
 from gettext import gettext as _
 from .server import ServerDatabase, ServerSignatureError
 from . import nm
@@ -7,10 +7,12 @@ from . import storage
 from .variants import ApplicationVariant
 from .state_machine import StateMachine, InvalidStateTransition
 from .config import Configuration
-from .utils import run_in_background_thread, run_delayed, cancel_at_context_end
+from .utils import run_in_background_thread, run_periodically, run_delayed, cancel_at_context_end
 
 
 logger = logging.getLogger(__name__)
+
+CHECK_NETWORK_INTERVAL = 1  # seconds
 
 
 class Application:
@@ -30,7 +32,7 @@ class Application:
         self.session_state_machine = StateMachine(InitialSessionState())
         self.interface_state_machine = StateMachine(InitialInterfaceState())
         self.server_db = ServerDatabase()
-        self.current_network_uuid = None
+        self.current_network_uuid: Optional[str] = None
         self.session_state_machine.register_level_callback(
             SessionActiveState, self.context_session_active)
         self.session_state_machine.register_level_callback(
@@ -62,8 +64,8 @@ class Application:
         else:
             self.session_transition('no_previous_session_found')
 
-        def on_network_update_callback(state, reason):
-            network.on_status_update_callback(self, state)
+        def on_network_update_callback(state):
+            network.on_state_update_callback(self, state)
 
         from . import network
         if not nm.subscribe_to_status_changes(on_network_update_callback):
@@ -71,6 +73,16 @@ class Application:
                 "unable to subscribe to network updates; "
                 "the application may not reflect the current state"
             )
+
+        def check_network_state():
+            from .network import check_network_state
+            check_network_state(self)
+
+        run_periodically(
+            check_network_state,
+            CHECK_NETWORK_INTERVAL,
+            'check-network',
+        )
 
     @run_in_background_thread('init-server-db')
     def initialize_server_db(self):
@@ -200,7 +212,7 @@ class Application:
         transit(transition, *args, **kwargs)
 
     def context_session_active(self, state):
-        expiry_duration = (state.validity.pending_expiry_time - datetime.utcnow()).total_seconds()
+        expiry_duration = state.validity.pending_remaining.total_seconds()
 
         def on_session_pending_expiry():
             self.session_transition_threadsafe('pending_expiry')
@@ -208,7 +220,7 @@ class Application:
         return cancel_at_context_end(run_delayed(on_session_pending_expiry, expiry_duration))
 
     def context_session_pending_expiry(self, state):
-        expiry_duration = (state.validity.end - datetime.utcnow()).total_seconds()
+        expiry_duration = state.validity.remaining.total_seconds()
 
         def on_session_expired():
             self.session_transition_threadsafe('has_expired')

@@ -3,19 +3,15 @@ import logging
 import enum
 from functools import partial
 from time import sleep
-from gettext import gettext
 from . import nm
 from . import settings
+from . import storage
 from .state_machine import BaseState
 from .app import Application
-from .server import ConfiguredServer as Server
-from .utils import run_in_background_thread
+from .server import ConfiguredServer as Server, Protocol
+from .utils import run_in_background_thread, translated_property
 
 logger = logging.getLogger(__name__)
-
-
-def translated_property(text):
-    return property(lambda self: gettext(text))  # type: ignore
 
 
 class StatusImage(enum.Enum):
@@ -42,7 +38,7 @@ class NetworkState(BaseState):
                              app: Application,
                              server: Server,
                              ) -> 'NetworkState':
-        return connect(app)
+        return connect_initial(app)
 
     def set_connecting(self, app: Application) -> 'NetworkState':
         return ConnectingState()
@@ -102,9 +98,9 @@ class UnconnectedState(NetworkState):
     status_label = translated_property("Disconnected")
 
 
-def connect(app: Application) -> NetworkState:
+def connect_initial(app: Application) -> NetworkState:
     """
-    Estabilish a connection to the server.
+    Estabilish an initial connection to the server.
     """
     client = nm.get_client()
     assert app.current_network_uuid is not None
@@ -113,6 +109,47 @@ def connect(app: Application) -> NetworkState:
         app.current_network_uuid,
         partial(on_any_update_callback, app),
     )
+    return ConnectingState()
+
+
+def connect(app: Application) -> NetworkState:
+    """
+    Estabilish a connection to the server.
+    """
+    client = nm.get_client()
+    assert app.current_network_uuid is not None
+
+    server = app.session_state.server
+    if storage.get_connection_protocol(server) is Protocol.WIREGUARD:
+        from eduvpn.interface.event import on_start_connection, on_chosen_profile
+        oauth_session = storage.load_oauth_session(server)
+        server_info = app.server_db.get_server_info(server)
+        metadata = storage.get_current_metadata(server.oauth_login_url)
+        assert metadata is not None
+        profile_id = metadata[6]
+        profile = server_info.get_profile(oauth_session, profile_id)
+        if profile is None:
+            # Profile was removed, redo profile choice.
+            on_start_connection(
+                app,
+                server,
+                oauth_session,
+            )
+        else:
+            on_chosen_profile(
+                app,
+                server,
+                oauth_session,
+                profile,
+            )
+        return DisconnectedState()
+    else:
+        nm.activate_connection(
+            client,
+            app.current_network_uuid,
+            partial(on_any_update_callback, app),
+        )
+
     return ConnectingState()
 
 
@@ -150,12 +187,12 @@ def enter_unknown_state(app: Application) -> NetworkState:
     @run_in_background_thread('poll-network-state')
     def determine_network_state_thread():
         counter = 0
-        _, status = nm.connection_status(nm.get_client())
-        while status is nm.NM.ActiveConnectionState.UNKNOWN or status is None:
+        state = nm.get_connection_state()
+        while state is nm.ConnectionState.UNKNOWN:
             if counter > UNKNOWN_STATE_MAX_RETRIES:
                 # After a number of retries, assume we've disconnected
                 # so the user can try to connect again.
-                status = nm.NM.ActiveConnectionState.DEACTIVATED
+                state = nm.ConnectionState.DISCONNECTED
                 logger.debug(
                     "network state has been unknown for too long,"
                     " fall back to disconnected state"
@@ -165,74 +202,81 @@ def enter_unknown_state(app: Application) -> NetworkState:
             counter += 1
             if not isinstance(app.network_state, UnknownState):
                 return
-            _, status = nm.connection_status(nm.get_client())
-            logger.debug(f"polling network state: {status}")
-        app.make_func_threadsafe(handle_active_connection_status)(app, status)
+            state = nm.get_connection_state()
+            logger.debug(f"polling network state: {state}")
+        app.make_func_threadsafe(on_state_update_callback)(app, state)
 
     determine_network_state_thread()
     return UnknownState()
 
 
-def on_status_update_callback(app: Application, status: nm.NM.VpnConnectionState):
+def on_state_update_callback(app: Application, state: nm.ConnectionState):
     """
-    Callback for whenever a connection status changes.
+    Callback for whenever a connection state changes.
     """
-    if status in [nm.NM.VpnConnectionState.CONNECT,
-                  nm.NM.VpnConnectionState.IP_CONFIG_GET,
-                  nm.NM.VpnConnectionState.PREPARE]:
+    if state is nm.ConnectionState.CONNECTING:
         app.network_transition('set_connecting')
-    elif status is nm.NM.VpnConnectionState.ACTIVATED:
+    elif state is nm.ConnectionState.CONNECTED:
         app.network_transition('set_connected')
-    elif status is nm.NM.VpnConnectionState.DISCONNECTED:
+    elif state is nm.ConnectionState.DISCONNECTED:
         app.network_transition('set_disconnected')
-    elif status is nm.NM.VpnConnectionState.FAILED:
+    elif state is nm.ConnectionState.FAILED:
         app.network_transition('set_error')
-    elif status is nm.NM.VpnConnectionState.NEED_AUTH:
-        app.network_transition('set_error')
-    elif status is nm.NM.VpnConnectionState.UNKNOWN:
+    elif state is nm.ConnectionState.UNKNOWN:
         app.network_transition('set_unknown')
     else:
-        raise ValueError(status)
+        raise ValueError(state)
 
 
 def on_any_update_callback(app: Application):
     """
-    Callback for whenever a connection status might have changed.
+    Callback for whenever a connection state might have changed,
+    where the new state is unknown.
     """
-    _, status = nm.connection_status(nm.get_client())
-    if status is None:
-        app.network_transition('set_unknown')
-    else:
-        handle_active_connection_status(app, status)
+    state = nm.get_connection_state()
+    on_state_update_callback(app, state)
 
 
 def get_network_state(app: Application) -> NetworkState:
-    _, status = nm.connection_status(nm.get_client())
-    if status is nm.NM.ActiveConnectionState.ACTIVATING:
+    """
+    Get the network state that corresponds to the connection state.
+    """
+    state = nm.get_connection_state()
+    return get_corresponding_state(app, state)
+
+
+def get_corresponding_state(
+    app: Application,
+    state: nm.ConnectionState,
+) -> NetworkState:
+    """
+    Get the network state that corresponds to the connection state.
+    """
+    if state is nm.ConnectionState.CONNECTING:
         return ConnectingState()
-    elif status is nm.NM.ActiveConnectionState.ACTIVATED:
+    elif state is nm.ConnectionState.CONNECTED:
         return ConnectedState()
-    elif status in [nm.NM.ActiveConnectionState.DEACTIVATED,
-                    nm.NM.ActiveConnectionState.DEACTIVATING]:
+    elif state is nm.ConnectionState.DISCONNECTED:
         return DisconnectedState()
-    elif status is nm.NM.ActiveConnectionState.UNKNOWN or status is None:
+    elif state is nm.ConnectionState.FAILED:
+        return ConnectionErrorState(None)
+    elif state is nm.ConnectionState.UNKNOWN:
         return enter_unknown_state(app)
     else:
-        raise ValueError(status)
+        raise ValueError(state)
 
 
-def handle_active_connection_status(app: Application, status: nm.NM.ActiveConnectionState):
-    if status is nm.NM.ActiveConnectionState.ACTIVATING:
-        app.network_transition('set_connecting')
-    elif status is nm.NM.ActiveConnectionState.ACTIVATED:
-        app.network_transition('set_connected')
-    elif status in [nm.NM.ActiveConnectionState.DEACTIVATED,
-                    nm.NM.ActiveConnectionState.DEACTIVATING]:
-        app.network_transition('set_disconnected')
-    elif status is nm.NM.ActiveConnectionState.UNKNOWN:
-        app.network_transition('set_unknown')
-    else:
-        raise ValueError(status)
+def check_network_state(app: Application):
+    state = nm.get_connection_state()
+    if state is not nm.ConnectionState.UNKNOWN:
+        network_state = get_corresponding_state(app, state)
+        if type(network_state) != type(app.network_state):  # NOQA
+            # If the state remains different for one second,
+            # update it in the app. This prevents
+            # confusing transitions around connect/disconnect.
+            sleep(1)
+            if nm.get_connection_state() is state:
+                app.make_func_threadsafe(on_state_update_callback)(app, state)
 
 
 class ConnectingState(NetworkState):
@@ -242,6 +286,9 @@ class ConnectingState(NetworkState):
 
     status_label = translated_property("Preparing to connect")
     status_image = StatusImage.CONNECTING
+
+    def set_connecting(self, app: Application) -> 'NetworkState':
+        return self
 
     def start_new_connection(self,
                              app: Application,
@@ -264,6 +311,9 @@ class ConnectedState(NetworkState):
     status_label = translated_property("Connection active")
     status_image = StatusImage.CONNECTED
 
+    def set_connected(self, app: Application) -> 'NetworkState':
+        return self
+
     def start_new_connection(self,
                              app: Application,
                              server: Server,
@@ -283,6 +333,9 @@ class DisconnectedState(NetworkState):
     status_label = translated_property("Disconnected")
     status_image = StatusImage.NOT_CONNECTED
 
+    def set_disconnected(self, app: Application) -> 'NetworkState':
+        return self
+
     def reconnect(self, app: Application) -> NetworkState:
         return connect(app)
 
@@ -297,10 +350,10 @@ class ReconnectingState(NetworkState):
     status_image = StatusImage.CONNECTING
 
     def set_unknown(self, app: Application) -> NetworkState:
-        return connect(app)
+        return connect_initial(app)
 
     def set_disconnected(self, app: Application) -> NetworkState:
-        return connect(app)
+        return connect_initial(app)
 
 
 class ConnectionErrorState(NetworkState):

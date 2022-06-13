@@ -7,7 +7,6 @@ from typing import Optional
 import os
 import webbrowser
 import logging
-from datetime import datetime
 from gettext import gettext as _, ngettext
 
 import gi
@@ -30,6 +29,7 @@ from ..utils import (
     get_prefix, run_in_main_gtk_thread, run_periodically, cancel_at_context_end)
 from . import search
 from .utils import show_ui_component, link_markup, show_error_dialog
+from .stats import NetworkStats
 
 logger = logging.getLogger(__name__)
 
@@ -42,11 +42,9 @@ RENEWAL_ALLOW_FRACTION = .8
 def get_validity_text(validity: Optional[Validity]) -> str:
     if validity is None:
         return _("Valid for <b>unknown</b>")
-    expiry = validity.end
-    now = datetime.utcnow()
-    if expiry <= now:
+    if validity.is_expired:
         return _("This session has expired")
-    delta = expiry - now
+    delta = validity.remaining
     days = delta.days
     hours = delta.seconds // 3600
     if days == 0:
@@ -93,6 +91,7 @@ class EduVpnGtkWindow(Gtk.ApplicationWindow):
             "on_search_changed": self.on_search_changed,
             "on_search_activate": self.on_search_activate,
             "on_switch_connection_state": self.on_switch_connection_state,
+            "on_toggle_connection_info": self.on_toggle_connection_info,
             "on_profile_selection_changed": self.on_profile_selection_changed,
             "on_location_selection_changed": self.on_location_selection_changed,
             "on_acknowledge_error": self.on_acknowledge_error,
@@ -137,6 +136,13 @@ class EduVpnGtkWindow(Gtk.ApplicationWindow):
         self.connection_status_label = builder.get_object('connectionStatusLabel')
         self.connection_session_label = builder.get_object('connectionSessionLabel')
         self.connection_switch = builder.get_object('connectionSwitch')
+        self.connection_info_expander = builder.get_object('connectionInfoExpander')
+        self.connection_info_downloaded = builder.get_object('connectionInfoDownloadedText')
+        self.connection_info_uploaded = builder.get_object('connectionInfoUploadedText')
+        self.connection_info_ipv4address = builder.get_object('connectionInfoIpv4AddressText')
+        self.connection_info_ipv6address = builder.get_object('connectionInfoIpv6AddressText')
+        self.connection_info_thread_cancel = None
+        self.connection_info_stats = None
 
         self.server_image = builder.get_object('serverImage')
         self.server_label = builder.get_object('serverLabel')
@@ -438,8 +444,7 @@ class EduVpnGtkWindow(Gtk.ApplicationWindow):
             column = Gtk.TreeViewColumn(None, text_cell, text=0)
             profile_tree_view.append_column(column)
 
-            profile_tree_view.set_model(profiles_list_model)
-
+        profile_tree_view.set_model(profiles_list_model)
         profiles_list_model.clear()
         for profile in new_state.profiles:
             profiles_list_model.append([str(profile), profile])
@@ -496,6 +501,12 @@ class EduVpnGtkWindow(Gtk.ApplicationWindow):
     def exit_ConfiguringConnection(self, old_state, new_state):
         self.hide_loading_page()
 
+    @transition_edge_callback(ENTER, network_state.ConnectedState)
+    def enter_ConnectedState(self, old_state, new_state):
+        is_expanded = self.connection_info_expander.get_expanded()
+        if is_expanded:
+            self.start_connection_info()
+
     @transition_edge_callback(ENTER, interface_state.ConnectionStatus)
     def enter_ConnectionStatus(self, old_state, new_state):
         self.show_page(self.connection_page)
@@ -505,6 +516,7 @@ class EduVpnGtkWindow(Gtk.ApplicationWindow):
     @transition_edge_callback(EXIT, interface_state.ConnectionStatus)
     def exit_ConnectionStatus(self, old_state, new_state):
         self.hide_page(self.connection_page)
+        self.pause_connection_info()
 
     @transition_level_callback(interface_state.ConnectionStatus)
     def context_ConnectionStatus(self, state):
@@ -513,6 +525,10 @@ class EduVpnGtkWindow(Gtk.ApplicationWindow):
             UPDATE_EXIPRY_INTERVAL,
             'update-validity',
         ))
+
+    @transition_edge_callback(ENTER, network_state.DisconnectedState)
+    def enter_DisconnectedState(self, old_state, new_state):
+        self.stop_connection_info()
 
     @transition_edge_callback(ENTER, interface_state.ErrorState)
     def enter_ErrorState(self, old_state, new_state):
@@ -597,6 +613,56 @@ class EduVpnGtkWindow(Gtk.ApplicationWindow):
             else:
                 self.app.interface_transition('deactivate_connection')
         return True
+
+    def pause_connection_info(self):
+        if self.connection_info_thread_cancel:
+            self.connection_info_thread_cancel()
+            self.connection_info_thread_cancel = None
+
+    def stop_connection_info(self):
+        # Pause the thread
+        self.pause_connection_info()
+
+        # Further cleanup
+        if self.connection_info_stats:
+            self.connection_info_stats.cleanup()
+            self.connection_info_stats = None
+
+    def start_connection_info(self):
+        if not self.app.network_state.has_transition('disconnect'):
+            logger.info("Connection Info: VPN is not active")
+            return
+
+        def update_connection_info_callback():
+            # Do nothing if we have no stats object
+            if not self.connection_info_stats:
+                return
+            download = self.connection_info_stats.download
+            upload = self.connection_info_stats.upload
+            ipv4 = self.connection_info_stats.ipv4
+            ipv6 = self.connection_info_stats.ipv6
+            self.connection_info_downloaded.set_text(download)
+            self.connection_info_uploaded.set_text(upload)
+            self.connection_info_ipv4address.set_text(ipv4)
+            self.connection_info_ipv6address.set_text(ipv6)
+
+        if not self.connection_info_stats:
+            self.connection_info_stats = NetworkStats()
+
+        if not self.connection_info_thread_cancel:
+            # Run every second in the background
+            self.connection_info_thread_cancel = run_periodically(
+                update_connection_info_callback, 1
+            )
+
+    def on_toggle_connection_info(self, _):
+        logger.debug("clicked on connection info")
+        was_expanded = self.connection_info_expander.get_expanded()
+
+        if not was_expanded:
+            self.start_connection_info()
+        else:
+            self.pause_connection_info()
 
     def on_profile_selection_changed(self, selection):
         logger.debug("selected profile")

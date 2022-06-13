@@ -4,7 +4,7 @@ from eduvpn.nm import (nm_available, add_connection,
                        import_ovpn, get_client, get_mainloop)
 from eduvpn.ovpn import Ovpn
 from eduvpn.storage import get_uuid
-from tests.mock_config import mock_config, mock_key, mock_cert
+from tests.mock_config import mock_config
 
 
 @skipIf(not nm_available(), "Network manager not available")
@@ -14,7 +14,7 @@ class TestNm(TestCase):
 
     def test_import_ovpn(self):
         ovpn = Ovpn.parse(mock_config)
-        import_ovpn(ovpn, mock_key, mock_cert)
+        import_ovpn(ovpn)
 
     def test_get_mainloop(self):
         get_mainloop()
@@ -22,7 +22,7 @@ class TestNm(TestCase):
     def test_get_add_connection(self):
         client = get_client()
         ovpn = Ovpn.parse(mock_config)
-        simple_connection = import_ovpn(ovpn, mock_key, mock_cert)
+        simple_connection = import_ovpn(ovpn)
         add_connection(client, simple_connection)
 
     def test_get_uuid(self):

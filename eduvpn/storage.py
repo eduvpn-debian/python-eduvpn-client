@@ -4,11 +4,12 @@ This module contains code to maintain a simple metadata storage in ~/.config/edu
 from typing import Optional, Tuple, List
 from enum import Enum
 from os import PathLike
-from datetime import datetime
+from datetime import datetime, timezone
 import json
+from requests_oauthlib import OAuth2Session
 from oauthlib.oauth2.rfc6749.tokens import OAuth2Token
 import eduvpn
-from eduvpn.settings import CONFIG_PREFIX, CONFIG_DIR_MODE
+from eduvpn.settings import CONFIG_PREFIX, CONFIG_DIR_MODE, CLIENT_ID
 from eduvpn.ovpn import Ovpn
 from eduvpn.utils import get_logger
 
@@ -83,16 +84,20 @@ def _set_setting(what: str, value: str):
         f.write(value)
 
 
-Metadata = Tuple[OAuth2Token, str, str, str, str, str, str, str, str, Optional[datetime], Optional[datetime]]
+Metadata = Tuple[OAuth2Token, str, str, str, str, str, str, str, str, Optional[datetime], Optional[datetime], 'eduvpn.server.Protocol']
 
 
 def serialize_datetime(dt: datetime) -> str:
+    assert dt.tzinfo is not None
+    if not hasattr(datetime, 'fromisoformat'):
+        # Python < 3.7.
+        dt = dt.astimezone(timezone.utc)
     return dt.isoformat()
 
 
 def deserialize_datetime(value: str) -> datetime:
     if hasattr(datetime, 'fromisoformat'):
-        return datetime.fromisoformat(value)
+        dt = datetime.fromisoformat(value)
     else:
         # Python < 3.7.
         format = '%Y-%m-%dT%H:%M:%S'
@@ -100,7 +105,16 @@ def deserialize_datetime(value: str) -> datetime:
             format += '.%f'
         if '+' in value or value.count('-') > 2:
             format += '%z'
-        return datetime.strptime(value, format)
+            if value[-3] == ':':
+                # Fix issue #462; Python3.6 does not accept the colon (bpo-31800).
+                value = value[:-3] + value[-2:]
+        dt = datetime.strptime(value, format)
+    # NOTE: Older versions stored session validities
+    #       as they appeared on the certificate; without a timezone.
+    #       In the future, we can assume all dates include a timezone.
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt
 
 
 def get_current_metadata(auth_url: str) -> Optional[Metadata]:
@@ -116,6 +130,10 @@ def get_current_metadata(auth_url: str) -> Optional[Metadata]:
         expiry = v.get('certificate_expiry')
         if expiry is not None:
             expiry = deserialize_datetime(expiry)
+        protocol = v.get('protocol')
+        from eduvpn.server import Protocol
+        if protocol is None:
+            protocol = Protocol.OPENVPN
         return (
             OAuth2Token(v['token']),
             v['token_endpoint'],
@@ -128,6 +146,7 @@ def get_current_metadata(auth_url: str) -> Optional[Metadata]:
             v['country_id'],
             created,
             expiry,
+            Protocol(protocol),
         )
     else:
         return None
@@ -137,7 +156,7 @@ def get_current_validity(auth_url: str) -> Optional['eduvpn.session.Validity']:
     metadata = get_current_metadata(auth_url)
     if metadata is None:
         return None
-    *_, start, end = metadata
+    *_, start, end, _ = metadata
     if start is None or end is None:
         return None
     from .session import Validity
@@ -157,6 +176,7 @@ def set_metadata(
         country_id: Optional[str],
         certificate_created: Optional[datetime] = None,
         certificate_expiry: Optional[datetime] = None,
+        protocol: 'eduvpn.server.Protocol' = None,
 ) -> None:
     """
     Set a configuration profile in storage
@@ -170,6 +190,9 @@ def set_metadata(
         expiry_str = None
     else:
         expiry_str = serialize_datetime(certificate_expiry)
+    from eduvpn.server import Protocol
+    if protocol is None:
+        protocol = Protocol.OPENVPN
     storage[auth_url] = {
         'token': token,
         'api_base_uri': auth_url,
@@ -183,6 +206,7 @@ def set_metadata(
         'country_id': country_id,
         'certificate_created': created_str,
         'certificate_expiry': expiry_str,
+        'protocol': protocol.value,
     }
     _write_metadatas(storage)
 
@@ -281,3 +305,38 @@ def update_token(token: OAuth2Token):
     if 'auth_url' in metadatas:
         metadatas[auth_url]['token'] = token
         _write_metadatas(metadatas)
+
+
+def get_oauth_session() -> Optional[OAuth2Session]:
+    """
+    Refreshes an active configuration. The token is refreshed if expired, and a new token is obtained if the token
+    is invalid.
+    """
+    uuid, auth_url, metadata = get_storage(check=False)
+    if metadata is None:
+        return None
+    token, token_endpoint, *_ = metadata
+    return OAuth2Session(client_id=CLIENT_ID, token=token, auto_refresh_url=token_endpoint)
+
+
+def get_connection_protocol(server: 'eduvpn.server.AnyServer') -> 'eduvpn.server.Protocol':
+    oauth_login_url = server.oauth_login_url  # type: ignore
+    metadata = get_current_metadata(oauth_login_url)
+    if metadata is None:
+        from eduvpn.server import Protocol
+        return Protocol.OPENVPN
+    *_, protocol = metadata
+    return protocol
+
+
+def load_oauth_session(server: 'eduvpn.server.AnyServer') -> Optional[OAuth2Session]:
+    oauth_login_url = server.oauth_login_url  # type: ignore
+    metadata = get_current_metadata(oauth_login_url)
+    if metadata is None:
+        return None
+    token, token_endpoint, *_ = metadata
+    return OAuth2Session(
+        client_id=CLIENT_ID,
+        token=token,
+        auto_refresh_url=token_endpoint,
+    )
