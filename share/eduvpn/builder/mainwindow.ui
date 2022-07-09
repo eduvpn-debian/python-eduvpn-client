@@ -300,11 +300,12 @@
                                 <property name="headers-visible">False</property>
                                 <property name="enable-search">False</property>
                                 <property name="search-column">0</property>
+                                <property name="hover-selection">True</property>
                                 <property name="enable-grid-lines">horizontal</property>
+                                <property name="activate-on-single-click">True</property>
+                                <signal name="row-activated" handler="on_server_row_activated" swapped="no"/>
                                 <child internal-child="selection">
-                                  <object class="GtkTreeSelection">
-                                    <signal name="changed" handler="on_select_server" swapped="no"/>
-                                  </object>
+                                  <object class="GtkTreeSelection"/>
                                 </child>
                               </object>
                               <packing>
@@ -373,11 +374,12 @@
                                 <property name="headers-visible">False</property>
                                 <property name="enable-search">False</property>
                                 <property name="search-column">0</property>
+                                <property name="hover-selection">True</property>
                                 <property name="enable-grid-lines">horizontal</property>
+                                <property name="activate-on-single-click">True</property>
+                                <signal name="row-activated" handler="on_server_row_activated" swapped="no"/>
                                 <child internal-child="selection">
-                                  <object class="GtkTreeSelection">
-                                    <signal name="changed" handler="on_select_server" swapped="no"/>
-                                  </object>
+                                  <object class="GtkTreeSelection"/>
                                 </child>
                               </object>
                               <packing>
@@ -431,11 +433,12 @@
                                 <property name="headers-visible">False</property>
                                 <property name="enable-search">False</property>
                                 <property name="search-column">0</property>
+                                <property name="hover-selection">True</property>
                                 <property name="enable-grid-lines">horizontal</property>
+                                <property name="activate-on-single-click">True</property>
+                                <signal name="row-activated" handler="on_server_row_activated" swapped="no"/>
                                 <child internal-child="selection">
-                                  <object class="GtkTreeSelection">
-                                    <signal name="changed" handler="on_select_server" swapped="no"/>
-                                  </object>
+                                  <object class="GtkTreeSelection"/>
                                 </child>
                               </object>
                               <packing>
@@ -559,11 +562,12 @@
                     <property name="headers-visible">False</property>
                     <property name="enable-search">False</property>
                     <property name="search-column">0</property>
+                    <property name="hover-selection">True</property>
                     <property name="enable-grid-lines">horizontal</property>
+                    <property name="activate-on-single-click">True</property>
+                    <signal name="row-activated" handler="on_location_row_activated" swapped="no"/>
                     <child internal-child="selection">
-                      <object class="GtkTreeSelection">
-                        <signal name="changed" handler="on_location_selection_changed" swapped="no"/>
-                      </object>
+                      <object class="GtkTreeSelection"/>
                     </child>
                   </object>
                   <packing>
@@ -607,11 +611,12 @@
                     <property name="headers-visible">False</property>
                     <property name="enable-search">False</property>
                     <property name="search-column">0</property>
+                    <property name="hover-selection">True</property>
                     <property name="enable-grid-lines">horizontal</property>
+                    <property name="activate-on-single-click">True</property>
+                    <signal name="row-activated" handler="on_profile_row_activated" swapped="no"/>
                     <child internal-child="selection">
-                      <object class="GtkTreeSelection">
-                        <signal name="changed" handler="on_profile_selection_changed" swapped="no"/>
-                      </object>
+                      <object class="GtkTreeSelection"/>
                     </child>
                   </object>
                   <packing>
@@ -867,8 +872,8 @@
                                   </object>
                                   <packing>
                                     <property name="left-attach">0</property>
-                                    <property name="width">2</property>
                                     <property name="top-attach">3</property>
+                                    <property name="width">2</property>
                                   </packing>
                                 </child>
                                 <child>
@@ -881,15 +886,9 @@
                                   </object>
                                   <packing>
                                     <property name="left-attach">2</property>
-                                    <property name="width">2</property>
                                     <property name="top-attach">3</property>
+                                    <property name="width">2</property>
                                   </packing>
-                                </child>
-                                <child>
-                                  <placeholder/>
-                                </child>
-                                <child>
-                                  <placeholder/>
                                 </child>
                                 <child>
                                   <placeholder/>
@@ -1068,22 +1067,10 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkBox">
+                  <!-- n-columns=2 n-rows=2 -->
+                  <object class="GtkGrid">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <child>
-                      <object class="GtkLabel">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="halign">start</property>
-                        <property name="label" translatable="yes">Force TCP</property>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">0</property>
-                      </packing>
-                    </child>
                     <child>
                       <object class="GtkSwitch" id="settingConfigForceTCP">
                         <property name="visible">True</property>
@@ -1093,16 +1080,52 @@
                         <signal name="state-set" handler="on_config_force_tcp" swapped="no"/>
                       </object>
                       <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">1</property>
+                        <property name="left-attach">1</property>
+                        <property name="top-attach">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="halign">start</property>
+                        <property name="label" translatable="yes">Force TCP</property>
+                      </object>
+                      <packing>
+                        <property name="left-attach">0</property>
+                        <property name="top-attach">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="halign">start</property>
+                        <property name="label" translatable="yes">Only the current user may connect to the network</property>
+                      </object>
+                      <packing>
+                        <property name="left-attach">0</property>
+                        <property name="top-attach">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkSwitch" id="settingConfigNMUserOnly">
+                        <property name="visible">True</property>
+                        <property name="can-focus">True</property>
+                        <property name="halign">end</property>
+                        <property name="hexpand">True</property>
+                        <signal name="state-set" handler="on_config_nm_user_only" swapped="no"/>
+                      </object>
+                      <packing>
+                        <property name="left-attach">1</property>
+                        <property name="top-attach">1</property>
                       </packing>
                     </child>
                   </object>
                   <packing>
                     <property name="expand">False</property>
                     <property name="fill">True</property>
-                    <property name="position">1</property>
+                    <property name="position">2</property>
                   </packing>
                 </child>
               </object>

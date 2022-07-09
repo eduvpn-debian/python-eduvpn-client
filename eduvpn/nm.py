@@ -50,155 +50,72 @@ def get_mainloop():
     return GLib.MainLoop()
 
 
+def get_active_connection() -> Optional['NM.ActiveConnection']:
+    """
+    Gets the active connection for the current uuid
+    """
+    client = get_client()
+    uuid = get_uuid()
+    for connection in client.get_active_connections():
+        if connection.get_uuid() == uuid:
+            return connection
+    return None
+
+
 def get_iface() -> Optional[str]:
     """
     Get the interface as a string for an openvpn or wireguard connection if there is one
     """
-    client = get_client()
-    uuid = get_uuid()
-    connection = client.get_connection_by_uuid(uuid)
-    if connection is None:
-        return None
-    type = connection.get_connection_type()
-    if type == 'vpn':
-        return get_iface_ovpn()
-    elif type == 'wireguard':
-        return get_iface_wg()
-    return None
-
-
-def get_iface_ovpn() -> Optional[str]:
-    """
-    Get the interface as a string if there is a master device for OpenVPN
-    """
-    client = get_client()
-    active_connection = client.get_primary_connection()
-    if not active_connection:
+    active_con = get_active_connection()
+    if not active_con:
         return None
 
-    master = active_connection.get_master()
-    if not master:
+    devices = active_con.get_devices()
+    if not devices:
         return None
 
-    return master.get_ip_iface()
-
-
-def get_iface_wg() -> Optional[str]:
-    """
-    Get the interface as a string for wireguard
-    """
-    client = get_client()
-    uuid = get_uuid()
-    connection = client.get_connection_by_uuid(uuid)
-    if connection is None:
-        return None
-    return connection.get_interface_name()
+    # Not always a master device is configured
+    # So get the interface for the first device we have
+    return devices[0].get_iface()
 
 
 def get_ipv4() -> Optional[str]:
     """
     Get the ipv4 address for an openvpn or wireguard connection as a string if there is one
     """
-    client = get_client()
-    uuid = get_uuid()
-    connection = client.get_connection_by_uuid(uuid)
-    if connection is None:
+    active_con = get_active_connection()
+    if not active_con:
         return None
-    type = connection.get_connection_type()
-    if type == 'vpn':
-        return get_ipv4_ovpn()
-    elif type == 'wireguard':
-        return get_ipv4_wg()
-    return None
+
+    ip4_config = active_con.get_ip4_config()
+    if not ip4_config:
+        return None
+
+    addresses = ip4_config.get_addresses()
+    if not addresses:
+        return None
+
+    return addresses[0].get_address()
 
 
 def get_ipv6() -> Optional[str]:
     """
     Get the ipv6 address for an openvpn or wireguard connection as a string if there is one
     """
-    client = get_client()
-    uuid = get_uuid()
-    connection = client.get_connection_by_uuid(uuid)
-    if connection is None:
-        return None
-    type = connection.get_connection_type()
-    if type == 'vpn':
-        return get_ipv6_ovpn()
-    elif type == 'wireguard':
-        return get_ipv6_wg()
-    return None
+    active_con = get_active_connection()
 
-
-def get_ipv4_ovpn() -> Optional[str]:
-    """
-    Get the ipv4 address for an openvpn connection as a string if there is one
-    """
-    client = get_client()
-    active_connection = client.get_primary_connection()
-    if not active_connection:
+    if not active_con:
         return None
 
-    ip4_config = active_connection.get_ip4_config()
-    addresses = ip4_config.get_addresses()
-    if not addresses:
-        return None
-    return addresses[0].get_address()
+    ip6_config = active_con.get_ip6_config()
 
-
-def get_ipv6_ovpn() -> Optional[str]:
-    """
-    Get the ipv6 address for an openvpn connection as a string if there is one
-    """
-    client = get_client()
-    active_connection = client.get_primary_connection()
-    if not active_connection:
+    if not ip6_config:
         return None
 
-    ip6_config = active_connection.get_ip6_config()
     addresses = ip6_config.get_addresses()
     if not addresses:
         return None
     return addresses[0].get_address()
-
-
-def get_ipv4_wg() -> Optional[str]:
-    """
-    Get the ipv4 address for a wireguard connection as a string if there is one
-    """
-    uuid = get_uuid()
-    if uuid is None:
-        return None
-    client = get_client()
-    connection = client.get_connection_by_uuid(uuid)
-    if not connection:
-        return None
-    ip4_config = connection.get_setting_ip4_config()
-    if not ip4_config:
-        return None
-    if ip4_config.get_num_addresses() == 0:
-        return None
-    address = ip4_config.get_address(0)
-    return address.get_address()
-
-
-def get_ipv6_wg() -> Optional[str]:
-    """
-    Get the ipv6 address for a wireguard connection as a string if there is one
-    """
-    uuid = get_uuid()
-    if uuid is None:
-        return None
-    client = get_client()
-    connection = client.get_connection_by_uuid(uuid)
-    if not connection:
-        return None
-    ip6_config = connection.get_setting_ip6_config()
-    if not ip6_config:
-        return None
-    if ip6_config.get_num_addresses() == 0:
-        return None
-    address = ip6_config.get_address(0)
-    return address.get_address()
 
 
 def nm_available() -> bool:
@@ -321,8 +238,9 @@ def update_connection(old_con: 'NM.Connection', new_con: 'NM.Connection', callba
                                  user_data=callback)
 
 
-def set_connection(client, new_connection, callback):
+def set_connection(client, new_connection, callback, user_only=False):
     uuid = get_uuid()
+    new_connection = set_setting_ensure_permissions(new_connection, user_only)
     if uuid:
         old_con = client.get_connection_by_uuid(uuid)
         if old_con:
@@ -331,10 +249,18 @@ def set_connection(client, new_connection, callback):
     add_connection(client=client, connection=new_connection, callback=callback)
 
 
-def save_connection(client: 'NM.Client', ovpn: Ovpn, private_key, certificate, callback=None):
+def set_setting_ensure_permissions(con: 'NM.SimpleConnection', enable: bool) -> 'NM.SimpleConnection':
+    if enable:
+        s_con = con.get_setting_connection()
+        s_con.add_permission("user", GLib.get_user_name(), None)
+        con.add_setting(s_con)
+    return con
+
+
+def save_connection(client: 'NM.Client', ovpn: Ovpn, private_key, certificate, callback=None, user_only=False):
     _logger.info("writing configuration to Network Manager")
     new_con = import_ovpn_and_certificate(ovpn, private_key, certificate)
-    set_connection(client, new_con, callback)
+    set_connection(client, new_con, callback, user_only)
 
 
 def save_connection_with_config(client: 'NM.Client',
@@ -347,14 +273,15 @@ def save_connection_with_config(client: 'NM.Client',
     settings = Configuration.load()
     if settings.force_tcp:
         ovpn.force_tcp()
-    return save_connection(client, ovpn, private_key, certificate, callback)
+    return save_connection(client, ovpn, private_key, certificate, callback, settings.nm_user_only)
 
 
 def start_openvpn_connection(ovpn: Ovpn, *, callback=None):
     client = get_client()
     _logger.info("writing ovpn configuration to Network Manager")
     new_con = import_ovpn(ovpn)
-    set_connection(client, new_con, callback)
+    settings = Configuration.load()
+    set_connection(client, new_con, callback, settings.nm_user_only)
 
 
 def start_wireguard_connection(
@@ -436,7 +363,8 @@ def start_wireguard_connection(
     profile.add_setting(s_con)
     profile.add_setting(w_con)
 
-    set_connection(client, profile, callback)
+    settings = Configuration.load()
+    set_connection(client, profile, callback, settings.nm_user_only)
 
 
 def get_cert_key(client: 'NM.Client', uuid: str) -> Tuple[str, str]:
@@ -493,24 +421,21 @@ def deactivate_connection(client: 'NM.Client', uuid: str, callback=None):
 
 
 def deactivate_connection_vpn(client: 'NM.Client', uuid: str, callback=None):
-    con = client.get_primary_connection()
+    con = get_active_connection()
     _logger.debug(f"deactivate_connection uuid: {uuid} connection: {con}")
     if con:
-        active_uuid = con.get_uuid()
+        def on_deactivate_connection(a_client: 'NM.Client', res, callback=None):
+            try:
+                result = a_client.deactivate_connection_finish(res)
+            except Exception as e:
+                _logger.error(e)
+            else:
+                _logger.info(F"deactivate_connection_async result: {result}")
+            finally:
+                if callback:
+                    callback()
 
-        if uuid == active_uuid:
-            def on_deactivate_connection(a_client: 'NM.Client', res, callback=None):
-                try:
-                    result = a_client.deactivate_connection_finish(res)
-                except Exception as e:
-                    _logger.error(e)
-                else:
-                    _logger.info(F"deactivate_connection_async result: {result}")
-                finally:
-                    if callback:
-                        callback()
-
-            client.deactivate_connection_async(active=con, callback=on_deactivate_connection, user_data=callback)
+        client.deactivate_connection_async(active=con, callback=on_deactivate_connection, user_data=callback)
     else:
         _logger.info("No active connection to deactivate")
 
@@ -663,37 +588,43 @@ def get_dbus() -> Optional['dbus.SystemBus']:
 
 def subscribe_to_status_changes(
     callback: Callable[[ConnectionState], Any],
-) -> bool:
+):
     """
-    Subscribe to all network status changes via DBus.
+    Subscribe to network status changes via the NM client.
 
     The callback argument is called with the connection state and reason
     whenever they change.
-
-    False is returned on failure.
     """
-    bus = get_dbus()
-    if bus is None:
-        return False
 
-    def wrapped_callback_vpn(state_code: 'dbus.UInt32', reason_code: 'dbus.UInt32'):
-        state = NM.VpnConnectionState(state_code)
-        callback(ConnectionState.from_vpn_state(state))
+    # The callback to monitor state changes
+    # Let the state machine know for state updates
+    def wrapped_callback(active: 'NM.ActiveConnection', state_code: int, reason_code: int):
+        if active.get_uuid() != get_uuid():
+            return
 
-    def wrapped_callback_wg(state_code: 'dbus.UInt32', reason_code: 'dbus.UInt32'):
         state = NM.ActiveConnectionState(state_code)
         callback(ConnectionState.from_active_state(state))
 
-    bus.add_signal_receiver(
-        handler_function=wrapped_callback_vpn,
-        dbus_interface='org.freedesktop.NetworkManager.VPN.Connection',
-        signal_name='VpnStateChanged',
-    )
-    bus.add_signal_receiver(
-        handler_function=wrapped_callback_wg,
-        dbus_interface='org.freedesktop.NetworkManager.Connection.Active',
-        signal_name='StateChanged',
-    )
+    # Connect the state changed signal for an active connection
+    def connect(con: 'NM.ActiveConnection'):
+        con.connect("state-changed", wrapped_callback)
+
+    # The callback when a connection gets added
+    # Connect the signals
+    def wrapped_connection_added(client: 'NM.Client', active_con: 'NM.ActiveConnection'):
+        if active_con.get_uuid() != get_uuid():
+            return
+        connect(active_con)
+
+    # If a connection was found already then...
+    client = get_client()
+    active_con = get_active_connection()
+
+    if active_con:
+        connect(active_con)
+
+    # Connect the active connection added signal
+    client.connect("active-connection-added", wrapped_connection_added)
     return True
 
 

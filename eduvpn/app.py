@@ -7,7 +7,7 @@ from . import storage
 from .variants import ApplicationVariant
 from .state_machine import StateMachine, InvalidStateTransition
 from .config import Configuration
-from .utils import run_in_background_thread, run_periodically, run_delayed, cancel_at_context_end
+from .utils import run_in_background_thread, run_delayed, cancel_at_context_end
 
 
 logger = logging.getLogger(__name__)
@@ -61,6 +61,7 @@ class Application:
             else:
                 validity = storage.get_current_validity(server.oauth_login_url)
                 self.session_transition('found_active_session', server, validity)
+                self.network_transition('found_previous_connection')
         else:
             self.session_transition('no_previous_session_found')
 
@@ -68,21 +69,7 @@ class Application:
             network.on_state_update_callback(self, state)
 
         from . import network
-        if not nm.subscribe_to_status_changes(on_network_update_callback):
-            logger.warning(
-                "unable to subscribe to network updates; "
-                "the application may not reflect the current state"
-            )
-
-        def check_network_state():
-            from .network import check_network_state
-            check_network_state(self)
-
-        run_periodically(
-            check_network_state,
-            CHECK_NETWORK_INTERVAL,
-            'check-network',
-        )
+        nm.subscribe_to_status_changes(on_network_update_callback)
 
     @run_in_background_thread('init-server-db')
     def initialize_server_db(self):
