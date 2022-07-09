@@ -2,14 +2,14 @@ from typing import Optional
 import logging
 import enum
 from functools import partial
-from time import sleep
 from . import nm
 from . import settings
 from . import storage
 from .state_machine import BaseState
 from .app import Application
-from .server import ConfiguredServer as Server, Protocol
-from .utils import run_in_background_thread, translated_property
+from .server import ConfiguredServer as Server
+from .utils import translated_property
+from .interface.event import on_start_connection, on_chosen_profile
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,7 @@ class NetworkState(BaseState):
         return DisconnectedState()
 
     def set_unknown(self, app: Application) -> 'NetworkState':
-        return enter_unknown_state(app)
+        return UnknownState()
 
     def set_error(self, app: Application, message: Optional[str] = None) -> 'NetworkState':
         return ConnectionErrorState(message)
@@ -116,41 +116,30 @@ def connect(app: Application) -> NetworkState:
     """
     Estabilish a connection to the server.
     """
-    client = nm.get_client()
     assert app.current_network_uuid is not None
 
     server = app.session_state.server
-    if storage.get_connection_protocol(server) is Protocol.WIREGUARD:
-        from eduvpn.interface.event import on_start_connection, on_chosen_profile
-        oauth_session = storage.load_oauth_session(server)
-        server_info = app.server_db.get_server_info(server)
-        metadata = storage.get_current_metadata(server.oauth_login_url)
-        assert metadata is not None
-        profile_id = metadata[6]
-        profile = server_info.get_profile(oauth_session, profile_id)
-        if profile is None:
-            # Profile was removed, redo profile choice.
-            on_start_connection(
-                app,
-                server,
-                oauth_session,
-            )
-        else:
-            on_chosen_profile(
-                app,
-                server,
-                oauth_session,
-                profile,
-            )
-        return DisconnectedState()
-    else:
-        nm.activate_connection(
-            client,
-            app.current_network_uuid,
-            partial(on_any_update_callback, app),
+    oauth_session = storage.load_oauth_session(server)
+    server_info = app.server_db.get_server_info(server)
+    metadata = storage.get_current_metadata(server.oauth_login_url)
+    assert metadata is not None
+    profile_id = metadata[6]
+    profile = server_info.get_profile(oauth_session, profile_id)
+    if profile is None:
+        # Profile was removed, redo profile choice.
+        on_start_connection(
+            app,
+            server,
+            oauth_session,
         )
-
-    return ConnectingState()
+    else:
+        on_chosen_profile(
+            app,
+            server,
+            oauth_session,
+            profile,
+        )
+    return DisconnectedState()
 
 
 def disconnect(app: Application, *, update_state=True) -> NetworkState:
@@ -176,38 +165,6 @@ def reconnect(app: Application) -> NetworkState:
     """
     disconnect(app, update_state=False)
     return ReconnectingState()
-
-
-UNKNOWN_STATE_MAX_RETRIES = 5
-
-
-def enter_unknown_state(app: Application) -> NetworkState:
-    # Set the state temporarily to unknown but keep polling for updates,
-    # since we don't always get notified by the update callback.
-    @run_in_background_thread('poll-network-state')
-    def determine_network_state_thread():
-        counter = 0
-        state = nm.get_connection_state()
-        while state is nm.ConnectionState.UNKNOWN:
-            if counter > UNKNOWN_STATE_MAX_RETRIES:
-                # After a number of retries, assume we've disconnected
-                # so the user can try to connect again.
-                state = nm.ConnectionState.DISCONNECTED
-                logger.debug(
-                    "network state has been unknown for too long,"
-                    " fall back to disconnected state"
-                )
-                break
-            sleep(1)
-            counter += 1
-            if not isinstance(app.network_state, UnknownState):
-                return
-            state = nm.get_connection_state()
-            logger.debug(f"polling network state: {state}")
-        app.make_func_threadsafe(on_state_update_callback)(app, state)
-
-    determine_network_state_thread()
-    return UnknownState()
 
 
 def on_state_update_callback(app: Application, state: nm.ConnectionState):
@@ -261,22 +218,9 @@ def get_corresponding_state(
     elif state is nm.ConnectionState.FAILED:
         return ConnectionErrorState(None)
     elif state is nm.ConnectionState.UNKNOWN:
-        return enter_unknown_state(app)
+        return UnknownState()
     else:
         raise ValueError(state)
-
-
-def check_network_state(app: Application):
-    state = nm.get_connection_state()
-    if state is not nm.ConnectionState.UNKNOWN:
-        network_state = get_corresponding_state(app, state)
-        if type(network_state) != type(app.network_state):  # NOQA
-            # If the state remains different for one second,
-            # update it in the app. This prevents
-            # confusing transitions around connect/disconnect.
-            sleep(1)
-            if nm.get_connection_state() is state:
-                app.make_func_threadsafe(on_state_update_callback)(app, state)
 
 
 class ConnectingState(NetworkState):
